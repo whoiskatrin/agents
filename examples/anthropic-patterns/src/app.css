@@ -53,7 +53,7 @@ header {
 }
 
 .theme-toggle-switch {
-  width: 48px;
+  width: 46px;
   height: 24px;
   background-color: var(--color-border);
   border-radius: 12px;

@@ -1,6 +1,6 @@
 // implementing https://www.anthropic.com/research/building-effective-agents
 
-import { Server, routePartykitRequest } from "partyserver";
+import { Server, routePartykitRequest, Connection } from "partyserver";
 import { createOpenAI } from "@ai-sdk/openai";
 import { generateText, generateObject } from "ai";
 import { z } from "zod";
@@ -20,13 +20,48 @@ type Env = {
 
 // A SequentialProcessing class to process tasks in a sequential manner
 export class Sequential extends Server<Env> {
-  async generateMarketingCopy(input: string) {
+  state: {
+    isRunning: boolean;
+    output: any;
+  } = {
+    isRunning: false,
+    output: undefined,
+  };
+
+  onConnect(connection: Connection) {
+    connection.send(
+      JSON.stringify({
+        type: "state",
+        state: this.state,
+      })
+    );
+  }
+
+  setState(state: typeof this.state) {
+    this.state = state;
+    this.broadcast(
+      JSON.stringify({
+        type: "state",
+        state: this.state,
+      })
+    );
+  }
+
+  async run() {
+    if (this.state.isRunning) return;
+    this.setState({ isRunning: true, output: undefined });
+
+    const result = await this.generateMarketingCopy({ input: "Hello, world!" });
+    this.setState({ isRunning: false, output: JSON.stringify(result) });
+  }
+
+  async generateMarketingCopy(props: { input: string }) {
     const model = openai("gpt-4o");
 
     // First step: Generate marketing copy
     const { text: copy } = await generateText({
       model,
-      prompt: `Write persuasive marketing copy for: ${input}. Focus on benefits and emotional appeal.`,
+      prompt: `Write persuasive marketing copy for: ${props.input}. Focus on benefits and emotional appeal.`,
     });
 
     // Perform quality check on copy
@@ -73,7 +108,7 @@ export class Sequential extends Server<Env> {
 
 // A Routing class to route tasks to the appropriate agent
 export class Routing extends Server<Env> {
-  async handleCustomerQuery(query: string) {
+  async handleCustomerQuery(props: { query: string }) {
     const model = openai("gpt-4o");
 
     // First step: Classify the query type
@@ -85,7 +120,7 @@ export class Routing extends Server<Env> {
         complexity: z.enum(["simple", "complex"]),
       }),
       prompt: `Classify this customer query:
-      ${query}
+      ${props.query}
   
       Determine:
       1. Query type (general, refund, or technical)
@@ -108,7 +143,7 @@ export class Routing extends Server<Env> {
         technical:
           "You are a technical support specialist with deep product knowledge. Focus on clear step-by-step troubleshooting.",
       }[classification.type],
-      prompt: query,
+      prompt: props.query,
     });
 
     return { response, classification };
@@ -118,7 +153,7 @@ export class Routing extends Server<Env> {
 // A ParallelProcessing class to process tasks in parallel
 export class Parallel extends Server<Env> {
   // Example: Parallel code review with multiple specialized reviewers
-  async parallelCodeReview(code: string) {
+  async parallelCodeReview(props: { code: string }) {
     const model = openai("gpt-4o");
 
     // Run parallel reviews
@@ -134,7 +169,7 @@ export class Parallel extends Server<Env> {
             suggestions: z.array(z.string()),
           }),
           prompt: `Review this code:
-      ${code}`,
+      ${props.code}`,
         }),
 
         generateObject({
@@ -147,7 +182,7 @@ export class Parallel extends Server<Env> {
             optimizations: z.array(z.string()),
           }),
           prompt: `Review this code:
-      ${code}`,
+      ${props.code}`,
         }),
 
         generateObject({
@@ -160,7 +195,7 @@ export class Parallel extends Server<Env> {
             recommendations: z.array(z.string()),
           }),
           prompt: `Review this code:
-      ${code}`,
+      ${props.code}`,
         }),
       ]);
 
@@ -184,7 +219,7 @@ export class Parallel extends Server<Env> {
 
 // An OrchestratorWorker class to orchestrate the workers
 export class Orchestrator extends Server<Env> {
-  async implementFeature(featureRequest: string) {
+  async implementFeature(props: { featureRequest: string }) {
     // Orchestrator: Plan the implementation
     const { object: implementationPlan } = await generateObject({
       model: openai("o1"),
@@ -201,7 +236,7 @@ export class Orchestrator extends Server<Env> {
       system:
         "You are a senior software architect planning feature implementations.",
       prompt: `Analyze this feature request and create an implementation plan:
-      ${featureRequest}`,
+      ${props.featureRequest}`,
     });
 
     // Workers: Execute the planned changes
@@ -228,7 +263,7 @@ export class Orchestrator extends Server<Env> {
           ${file.purpose}
   
           Consider the overall feature context:
-          ${featureRequest}`,
+          ${props.featureRequest}`,
         });
 
         return {
@@ -247,7 +282,7 @@ export class Orchestrator extends Server<Env> {
 
 // An EvaluatorOptimizer class to evaluate and optimize the agents
 export class Evaluator extends Server<Env> {
-  async translateWithFeedback(text: string, targetLanguage: string) {
+  async translateWithFeedback(props: { text: string; targetLanguage: string }) {
     const model = openai("gpt-4o");
 
     let currentTranslation = "";
@@ -258,8 +293,8 @@ export class Evaluator extends Server<Env> {
     const { text: translation } = await generateText({
       model: openai("gpt-4o-mini"), // use small model for first attempt
       system: "You are an expert literary translator.",
-      prompt: `Translate this text to ${targetLanguage}, preserving tone and cultural nuances:
-      ${text}`,
+      prompt: `Translate this text to ${props.targetLanguage}, preserving tone and cultural nuances:
+      ${props.text}`,
     });
 
     currentTranslation = translation;
@@ -280,7 +315,7 @@ export class Evaluator extends Server<Env> {
         system: "You are an expert in evaluating literary translations.",
         prompt: `Evaluate this translation:
   
-        Original: ${text}
+        Original: ${props.text}
         Translation: ${currentTranslation}
   
         Consider:
@@ -308,7 +343,7 @@ export class Evaluator extends Server<Env> {
         ${evaluation.specificIssues.join("\n")}
         ${evaluation.improvementSuggestions.join("\n")}
   
-        Original: ${text}
+        Original: ${props.text}
         Current Translation: ${currentTranslation}`,
       });
 
