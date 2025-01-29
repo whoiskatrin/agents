@@ -75,6 +75,10 @@ function createAgent(name: string, workflow: (props: any) => Promise<any>) {
   };
 }
 
+// Here are the patterns, implemented as simple async functions
+// These were copied directly from the Vercel AI SDK examples
+// https://sdk.vercel.ai/docs/foundations/agents
+
 // A SequentialProcessing class to process tasks in a sequential manner
 export const Sequential = createAgent(
   "Sequential",

@@ -2,6 +2,9 @@ import { useEffect, useState } from "react";
 import { usePartySocket } from "partysocket/react";
 import "./app.css";
 
+const sessionId = localStorage.getItem("sessionId") || crypto.randomUUID();
+localStorage.setItem("sessionId", sessionId);
+
 type WorkflowState = {
   isRunning: boolean;
   output: string;
@@ -52,7 +55,7 @@ function PatternSection({
 }: PatternProps) {
   const socket = usePartySocket({
     party: type,
-    room: "default-room",
+    room: sessionId,
     onMessage: (e) => {
       const data = JSON.parse(e.data);
       console.log(data);
