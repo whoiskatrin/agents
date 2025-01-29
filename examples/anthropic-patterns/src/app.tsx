@@ -314,14 +314,14 @@ function PatternSection({
               ) : workflowState.output ? (
                 "Run Again"
               ) : (
-                "Run Workflow"
+                "Run"
               )}
             </button>
           </div>
           <pre className="workflow-output">
             {workflowState.output
               ? formatOutput(workflowState.output)
-              : `Enter input above and click 'Run Workflow' to see ${title} in action`}
+              : `Enter input above and click 'Run' to see ${title} in action`}
           </pre>
         </div>
       </div>

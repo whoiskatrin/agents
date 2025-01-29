@@ -27,6 +27,19 @@ body {
   line-height: 1.6;
   color: var(--color-text);
   background-color: var(--color-background);
+  background-image: radial-gradient(
+      circle at center center,
+      var(--color-border) 2px,
+      transparent 2px
+    ),
+    radial-gradient(
+      circle at center center,
+      var(--color-border) 2px,
+      transparent 2px
+    );
+  background-size: 40px 40px;
+  background-position: 0 0, 20px 20px;
+  background-attachment: fixed;
   transition: background-color 0.3s ease, color 0.3s ease;
 }
 
@@ -34,6 +47,9 @@ body {
   max-width: 1200px;
   margin: 0 auto;
   padding: 2rem;
+  /* background-color: var(--color-background); */
+  box-shadow: 0 0 50px rgba(0, 0, 0, 0.05);
+  min-height: 100vh;
 }
 
 header {
