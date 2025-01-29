@@ -1,61 +1,86 @@
 // implementing https://www.anthropic.com/research/building-effective-agents
 
-import { Server, routePartykitRequest, Connection } from "partyserver";
+import {
+  Server,
+  routePartykitRequest,
+  Connection,
+  WSMessage,
+} from "partyserver";
 import { createOpenAI } from "@ai-sdk/openai";
 import { generateText, generateObject } from "ai";
 import { z } from "zod";
 
 const openai = createOpenAI({
-  // @ts-ignore
+  // @ts-ignore we are replacing this at build time
   apiKey: process.env.OPENAI_API_KEY,
 });
 
 type Env = {
-  Sequential: DurableObjectNamespace<Sequential>;
-  Routing: DurableObjectNamespace<Routing>;
-  Parallel: DurableObjectNamespace<Parallel>;
-  Orchestrator: DurableObjectNamespace<Orchestrator>;
-  Evaluator: DurableObjectNamespace<Evaluator>;
+  Sequential: DurableObjectNamespace<Server<Env>>;
+  Routing: DurableObjectNamespace<Server<Env>>;
+  Parallel: DurableObjectNamespace<Server<Env>>;
+  Orchestrator: DurableObjectNamespace<Server<Env>>;
+  Evaluator: DurableObjectNamespace<Server<Env>>;
 };
 
-// A SequentialProcessing class to process tasks in a sequential manner
-export class Sequential extends Server<Env> {
-  state: {
-    isRunning: boolean;
-    output: any;
-  } = {
-    isRunning: false,
-    output: undefined,
+// createAgent is a helper function to generate an agent class
+// with helpers for sending/receiving messages to the client and updating the state
+function createAgent(name: string, workflow: (props: any) => Promise<any>) {
+  return class Agent extends Server<Env> {
+    state: {
+      isRunning: boolean;
+      output: any;
+    } = {
+      isRunning: false,
+      output: undefined,
+    };
+
+    onConnect(connection: Connection) {
+      connection.send(
+        JSON.stringify({
+          type: "state",
+          state: this.state,
+        })
+      );
+    }
+
+    onMessage(connection: Connection, message: WSMessage) {
+      const data = JSON.parse(message as string);
+      switch (data.type) {
+        case "run":
+          this.run();
+          break;
+        default:
+          console.log("Unknown message type", data.type);
+      }
+    }
+
+    setState(state: typeof this.state) {
+      this.state = state;
+      this.broadcast(JSON.stringify({ type: "state", state: this.state }));
+    }
+
+    async run() {
+      if (this.state.isRunning) return;
+      this.setState({ isRunning: true, output: undefined });
+
+      console.log("running", name);
+
+      const result = await workflow({
+        input: "Hello, world!",
+      });
+      console.log("result", result);
+      this.setState({ isRunning: false, output: JSON.stringify(result) });
+    }
   };
+}
 
-  onConnect(connection: Connection) {
-    connection.send(
-      JSON.stringify({
-        type: "state",
-        state: this.state,
-      })
-    );
-  }
-
-  setState(state: typeof this.state) {
-    this.state = state;
-    this.broadcast(
-      JSON.stringify({
-        type: "state",
-        state: this.state,
-      })
-    );
-  }
-
-  async run() {
-    if (this.state.isRunning) return;
-    this.setState({ isRunning: true, output: undefined });
-
-    const result = await this.generateMarketingCopy({ input: "Hello, world!" });
-    this.setState({ isRunning: false, output: JSON.stringify(result) });
-  }
-
-  async generateMarketingCopy(props: { input: string }) {
+// A SequentialProcessing class to process tasks in a sequential manner
+export const Sequential = createAgent(
+  "Sequential",
+  async (props: { input: string }) => {
+    // This agent uses a prompt chaining workflow, ideal for tasks that can be decomposed into fixed subtasks.
+    // It trades off latency for higher accuracy by making each LLM call an easier task.
     const model = openai("gpt-4o");
 
     // First step: Generate marketing copy
@@ -104,11 +129,14 @@ export class Sequential extends Server<Env> {
 
     return { copy, qualityMetrics };
   }
-}
+);
 
 // A Routing class to route tasks to the appropriate agent
-export class Routing extends Server<Env> {
-  async handleCustomerQuery(props: { query: string }) {
+export const Routing = createAgent(
+  "Routing",
+  async (props: { query: string }) => {
+    // This agent uses a routing workflow, which classifies input and directs it to specialized follow-up tasks.
+    // It is effective for complex tasks with distinct categories that are better handled separately.
     const model = openai("gpt-4o");
 
     // First step: Classify the query type
@@ -148,12 +176,14 @@ export class Routing extends Server<Env> {
 
     return { response, classification };
   }
-}
+);
 
 // A ParallelProcessing class to process tasks in parallel
-export class Parallel extends Server<Env> {
-  // Example: Parallel code review with multiple specialized reviewers
-  async parallelCodeReview(props: { code: string }) {
+export const Parallel = createAgent(
+  "Parallel",
+  async (props: { code: string }) => {
+    // This agent uses a parallelization workflow, effective for tasks that can be divided into independent subtasks.
+    // It allows for speed and multiple perspectives, improving confidence in results.
     const model = openai("gpt-4o");
 
     // Run parallel reviews
@@ -215,12 +245,14 @@ export class Parallel extends Server<Env> {
 
     return { reviews, summary };
   }
-}
+);
 
 // An OrchestratorWorker class to orchestrate the workers
-export class Orchestrator extends Server<Env> {
-  async implementFeature(props: { featureRequest: string }) {
-    // Orchestrator: Plan the implementation
+export const Orchestrator = createAgent(
+  "Orchestrator",
+  async (props: { featureRequest: string }) => {
+    // This agent uses an orchestrator-workers workflow, suitable for complex tasks where subtasks aren't pre-defined.
+    // It dynamically breaks down tasks and delegates them to worker LLMs, synthesizing their results.
     const { object: implementationPlan } = await generateObject({
       model: openai("o1"),
       schema: z.object({
@@ -278,11 +310,12 @@ export class Orchestrator extends Server<Env> {
       changes: fileChanges,
     };
   }
-}
+);
 
 // An EvaluatorOptimizer class to evaluate and optimize the agents
-export class Evaluator extends Server<Env> {
-  async translateWithFeedback(props: { text: string; targetLanguage: string }) {
+export const Evaluator = createAgent(
+  "Evaluator",
+  async (props: { text: string; targetLanguage: string }) => {
     const model = openai("gpt-4o");
 
     let currentTranslation = "";
@@ -356,7 +389,7 @@ export class Evaluator extends Server<Env> {
       iterationsRequired: iterations,
     };
   }
-}
+);
 
 export default {
   async fetch(request, env, ctx) {

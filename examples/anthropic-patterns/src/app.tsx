@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { usePartySocket } from "partysocket/react";
 import "./app.css";
 
 type WorkflowState = {
@@ -21,6 +22,27 @@ type PatternProps = {
   index: number;
 };
 
+type FormState = {
+  sequential: { input: string };
+  routing: { query: string };
+  parallel: { code: string };
+  orchestrator: { featureRequest: string };
+  evaluator: { text: string; targetLanguage: string };
+};
+
+const LANGUAGES = [
+  { value: "french", label: "French" },
+  { value: "spanish", label: "Spanish" },
+  { value: "japanese", label: "Japanese" },
+  { value: "german", label: "German" },
+  { value: "mandarin", label: "Mandarin Chinese" },
+  { value: "arabic", label: "Arabic" },
+  { value: "russian", label: "Russian" },
+  { value: "italian", label: "Italian" },
+  { value: "klingon", label: "Klingon" },
+  { value: "portuguese", label: "Portuguese" },
+] as const;
+
 function PatternSection({
   type,
   title,
@@ -28,6 +50,20 @@ function PatternSection({
   image,
   index,
 }: PatternProps) {
+  const socket = usePartySocket({
+    party: type,
+    room: "default-room",
+    onMessage: (e) => {
+      const data = JSON.parse(e.data);
+      console.log(data);
+      switch (data.type) {
+        case "state":
+          setWorkflowState(data.state);
+          break;
+      }
+    },
+  });
+
   const [workflowState, setWorkflowState] = useState<WorkflowState>({
     isRunning: false,
     output: "",
@@ -36,27 +72,209 @@ function PatternSection({
   const runWorkflow = async () => {
     setWorkflowState((prev) => ({ ...prev, isRunning: true }));
 
-    // Simulate workflow execution
-    const examples = {
-      sequential:
-        "1. Processing input text...\n2. Generating response...\n3. Final output: Completed sequential processing",
-      routing:
-        "Analyzing input...\nRouting to technical support queue\nGenerating specialized response...",
-      parallel:
-        "Starting parallel tasks...\nTask A: Complete\nTask B: Complete\nTask C: Complete\nMerging results...",
-      orchestrator:
-        "Orchestrator: Planning task breakdown\n- Subtask 1 assigned to Worker A\n- Subtask 2 assigned to Worker B\nSynthesizing results...",
-      evaluator:
-        "Initial generation: Draft response\nEvaluation: Needs improvement in clarity\nOptimizing: Generating improved version\nFinal output: Enhanced response",
-    };
-
     // Simulate API delay
-    await new Promise((resolve) => setTimeout(resolve, 2000));
+    // await new Promise((resolve) => setTimeout(resolve, 2000));
 
-    setWorkflowState({
+    setWorkflowState((state) => ({
+      ...state,
       isRunning: false,
-      output: examples[type],
-    });
+    }));
+
+    socket.send(
+      JSON.stringify({
+        type: "run",
+        input: formState,
+      })
+    );
+  };
+
+  const [formState, setFormState] = useState<FormState[typeof type]>(() => {
+    switch (type) {
+      case "sequential":
+        return { input: "Our new AI-powered productivity app" };
+      case "routing":
+        return { query: "How do I reset my password?" };
+      case "parallel":
+        return {
+          code: `function processUserData(data) {
+  // TODO: Add validation
+  database.save(data);
+  return true;
+}`,
+        };
+      case "orchestrator":
+        return {
+          featureRequest:
+            "Add dark mode support to the dashboard, including theme persistence and system preference detection",
+        };
+      case "evaluator":
+        return {
+          text: "The early bird catches the worm",
+          targetLanguage: LANGUAGES[0].value,
+        };
+    }
+  });
+
+  const handleInputChange = (
+    e: React.ChangeEvent<
+      HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
+    >
+  ) => {
+    const { name, value } = e.target;
+    setFormState((prev) => ({ ...prev, [name]: value }));
+  };
+
+  const getFormContent = () => {
+    if (type === "sequential") {
+      const state = formState as FormState["sequential"];
+      return (
+        <div className="form-group">
+          <label htmlFor="sequential-input">Marketing Copy Input</label>
+          <input
+            id="sequential-input"
+            type="text"
+            name="input"
+            value={state.input}
+            onChange={handleInputChange}
+            placeholder="e.g., 'Our new AI-powered productivity app'"
+            className="workflow-input"
+          />
+          <small className="input-help">
+            Enter a product or service to generate marketing copy for
+          </small>
+        </div>
+      );
+    }
+
+    if (type === "routing") {
+      const state = formState as FormState["routing"];
+      return (
+        <div className="form-group">
+          <label htmlFor="routing-query">Customer Query</label>
+          <input
+            id="routing-query"
+            type="text"
+            name="query"
+            value={state.query}
+            onChange={handleInputChange}
+            placeholder="e.g., 'How do I reset my password?'"
+            className="workflow-input"
+          />
+          <small className="input-help">
+            Enter a customer support question to be routed
+          </small>
+        </div>
+      );
+    }
+
+    if (type === "parallel") {
+      const state = formState as FormState["parallel"];
+      return (
+        <div className="form-group">
+          <label htmlFor="parallel-code">Code for Review</label>
+          <textarea
+            id="parallel-code"
+            name="code"
+            value={state.code}
+            onChange={handleInputChange}
+            placeholder={`e.g.,\nfunction processUserData(data) {\n  // TODO: Add validation\n  database.save(data);\n  return true;\n}`}
+            className="workflow-input workflow-textarea"
+            rows={4}
+          />
+          <small className="input-help">
+            Enter code snippet for parallel security, performance, and
+            maintainability review
+          </small>
+        </div>
+      );
+    }
+
+    if (type === "orchestrator") {
+      const state = formState as FormState["orchestrator"];
+      return (
+        <div className="form-group">
+          <label htmlFor="orchestrator-request">Feature Request</label>
+          <textarea
+            id="orchestrator-request"
+            name="featureRequest"
+            value={state.featureRequest}
+            onChange={handleInputChange}
+            placeholder="e.g., 'Add dark mode support to the dashboard, including theme persistence and system preference detection'"
+            className="workflow-input workflow-textarea"
+            rows={4}
+          />
+          <small className="input-help">
+            Describe the feature to be implemented across multiple files
+          </small>
+        </div>
+      );
+    }
+
+    if (type === "evaluator") {
+      const state = formState as FormState["evaluator"];
+      return (
+        <>
+          <div className="form-group">
+            <label htmlFor="evaluator-text">Text to Translate</label>
+            <textarea
+              id="evaluator-text"
+              name="text"
+              value={state.text}
+              onChange={handleInputChange}
+              placeholder="e.g., 'The early bird catches the worm'"
+              className="workflow-input workflow-textarea"
+              rows={4}
+            />
+            <small className="input-help">
+              Enter text to be translated and optimized
+            </small>
+          </div>
+          <div className="form-group">
+            <label htmlFor="evaluator-language">Target Language</label>
+            <select
+              id="evaluator-language"
+              name="targetLanguage"
+              value={state.targetLanguage}
+              onChange={handleInputChange}
+              className="workflow-input"
+            >
+              {LANGUAGES.map((lang) => (
+                <option key={lang.value} value={lang.value}>
+                  {lang.label}
+                </option>
+              ))}
+            </select>
+            <small className="input-help">
+              Select the language to translate into
+            </small>
+          </div>
+        </>
+      );
+    }
+  };
+
+  const getExampleOutput = () => {
+    if (type === "sequential") {
+      const state = formState as FormState["sequential"];
+      return `Processing marketing copy for: "${state.input}"\n1. Generating initial copy...\n2. Evaluating quality metrics...\n3. Final output: Compelling marketing message created`;
+    }
+    if (type === "routing") {
+      const state = formState as FormState["routing"];
+      return `Analyzing query: "${state.query}"\nRouting to appropriate department...\nGenerating specialized response...`;
+    }
+    if (type === "parallel") {
+      const state = formState as FormState["parallel"];
+      return `Running parallel code reviews for:\n${state.code}\nSecurity Review: Complete\nPerformance Review: Complete\nMaintainability Review: Complete`;
+    }
+    if (type === "orchestrator") {
+      const state = formState as FormState["orchestrator"];
+      return `Planning implementation for: "${state.featureRequest}"\n1. Analyzing requirements\n2. Breaking down tasks\n3. Assigning to workers`;
+    }
+    if (type === "evaluator") {
+      const state = formState as FormState["evaluator"];
+      return `Translating text to ${state.targetLanguage}:\n"${state.text}"\nGenerating translation...\nEvaluating quality...\nRefining output...`;
+    }
+    return "";
   };
 
   return (
@@ -70,6 +288,7 @@ function PatternSection({
         </div>
         <p className="pattern-description">{description}</p>
         <div className="workflow-runner">
+          <div className="workflow-form">{getFormContent()}</div>
           <div className="workflow-toolbar">
             <button
               className="run-button"
@@ -84,12 +303,13 @@ function PatternSection({
               ) : workflowState.output ? (
                 "Run Again"
               ) : (
-                "Run"
+                "Run Workflow"
               )}
             </button>
           </div>
           <div className="workflow-output">
-            {workflowState.output || `Click 'Run' to see ${title} in action`}
+            {workflowState.output ||
+              `Enter input above and click 'Run Workflow' to see ${title} in action`}
           </div>
         </div>
       </div>
@@ -164,7 +384,28 @@ export default function App() {
         </div>
         <h1>Building Effective Agents</h1>
         <p>Common patterns for implementing AI agents</p>
-        <div className="header-links">
+      </header>
+
+      <main>
+        {(
+          Object.entries(patterns) as [
+            WorkflowType,
+            (typeof patterns)[keyof typeof patterns]
+          ][]
+        ).map(([type, pattern], index) => (
+          <PatternSection
+            key={type}
+            type={type}
+            title={pattern.title}
+            description={pattern.description}
+            image={pattern.image}
+            index={index}
+          />
+        ))}
+      </main>
+
+      <footer>
+        <div className="footer-links">
           <p>
             Based on{" "}
             <a
@@ -188,25 +429,7 @@ export default function App() {
             , running in Cloudflare's Durable Objects.
           </p>
         </div>
-      </header>
-
-      <main>
-        {(
-          Object.entries(patterns) as [
-            WorkflowType,
-            (typeof patterns)[keyof typeof patterns]
-          ][]
-        ).map(([type, pattern], index) => (
-          <PatternSection
-            key={type}
-            type={type}
-            title={pattern.title}
-            description={pattern.description}
-            image={pattern.image}
-            index={index}
-          />
-        ))}
-      </main>
+      </footer>
     </div>
   );
 }
