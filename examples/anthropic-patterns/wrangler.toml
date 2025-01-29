@@ -1,0 +1,33 @@
+name = "anthropic-patterns"
+main = "src/server.ts"
+compatibility_date = "2025-01-29"
+
+assets = { directory = "public" }
+
+[build]
+command = "npm run build"
+
+[[durable_objects.bindings]]
+name = "sequential"
+class_name = "Sequential"
+
+[[durable_objects.bindings]]
+name = "routing"
+class_name = "Routing"
+
+[[durable_objects.bindings]]
+name = "parallel"
+class_name = "Parallel"
+
+[[durable_objects.bindings]]
+name = "orchestrator"
+class_name = "Orchestrator"
+
+[[durable_objects.bindings]]
+name = "evaluator"
+class_name = "Evaluator"
+
+[[migrations]]
+tag = "v1"
+new_sqlite_classes = ["Sequential", "Routing", "Parallel", "Orchestrator", "Evaluator"]
+
