@@ -2,9 +2,6 @@ import { useEffect, useState } from "react";
 import { usePartySocket } from "partysocket/react";
 import "./app.css";
 
-const sessionId = localStorage.getItem("sessionId") || crypto.randomUUID();
-localStorage.setItem("sessionId", sessionId);
-
 type WorkflowState = {
   isRunning: boolean;
   output: string;
@@ -55,7 +52,7 @@ function PatternSection({
 }: PatternProps) {
   const socket = usePartySocket({
     party: type,
-    room: sessionId,
+    room: "default-room",
     onMessage: (e) => {
       const data = JSON.parse(e.data);
       console.log(data);
@@ -397,8 +394,32 @@ export default function App() {
           </span>
           <div className="theme-toggle-switch" />
         </div>
-        <h1>Building Effective Agents</h1>
+        <h1>⛅️ Building Effective Agents</h1>
         <p>Common patterns for implementing AI agents</p>
+        <div className="header-links">
+          <p>
+            Based on{" "}
+            <a
+              href="https://www.anthropic.com/research/building-effective-agents"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              Anthropic's research
+            </a>{" "}
+            on agent patterns.
+          </p>
+          <p>
+            Code samples from{" "}
+            <a
+              href="https://sdk.vercel.ai/docs/foundations/agents"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              Vercel's AI SDK
+            </a>
+            , running in Cloudflare's Durable Objects.
+          </p>
+        </div>
       </header>
 
       <main>
@@ -479,33 +500,6 @@ export default function App() {
           </div>
         </div>
       </section>
-
-      <footer>
-        <div className="footer-links">
-          <p>
-            Based on{" "}
-            <a
-              href="https://www.anthropic.com/research/building-effective-agents"
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              Anthropic's research
-            </a>{" "}
-            on agent patterns.
-          </p>
-          <p>
-            Code samples from{" "}
-            <a
-              href="https://sdk.vercel.ai/docs/foundations/agents"
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              Vercel's AI SDK
-            </a>
-            , running in Cloudflare's Durable Objects.
-          </p>
-        </div>
-      </footer>
     </div>
   );
 }

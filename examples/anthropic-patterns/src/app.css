@@ -97,12 +97,13 @@ header p {
 
 .header-links {
   margin-top: 1.5rem;
-  font-size: 1rem;
+  font-size: 0.85rem;
   color: var(--color-text);
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
   align-items: center;
+  opacity: 0.8;
 }
 
 .header-links a {
@@ -245,7 +246,7 @@ header p {
   flex-grow: 1;
   min-height: 200px;
   font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
-  white-space: pre;
+  white-space: pre-wrap;
   overflow-x: auto;
   font-size: 0.9rem;
   line-height: 1.5;
@@ -367,7 +368,7 @@ select.workflow-input option {
 }
 
 footer {
-  margin-top: 2rem;
+  margin-top: 4rem;
   padding-top: 2rem;
   border-top: 1px solid var(--color-border);
 }
@@ -394,7 +395,7 @@ footer {
 }
 
 .durable-objects-intro {
-  margin: 4rem 0;
+  margin: 2rem 0 4rem;
   padding: 2rem;
   background: var(--color-hover);
   border-radius: 8px;
