@@ -157,6 +157,19 @@ header p {
   height: auto;
   border-radius: 4px;
   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  transition: filter 0.3s ease;
+}
+
+/* Invert colors in dark mode */
+[data-theme="dark"] .pattern-content img {
+  filter: invert(1) hue-rotate(180deg);
+}
+
+/* Add a subtle background in dark mode to improve contrast */
+[data-theme="dark"] .pattern-image {
+  background: var(--color-hover);
+  border-radius: 4px;
+  padding: 1rem;
 }
 
 .pattern-description {
@@ -231,11 +244,33 @@ header p {
   padding: 1rem;
   flex-grow: 1;
   min-height: 200px;
-  font-family: monospace;
-  white-space: pre-wrap;
-  overflow-y: auto;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  white-space: pre;
+  overflow-x: auto;
   font-size: 0.9rem;
-  line-height: 1.4;
+  line-height: 1.5;
+  margin: 0;
+  tab-size: 2;
+}
+
+/* Style scrollbars for the output */
+.workflow-output::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+.workflow-output::-webkit-scrollbar-track {
+  background: var(--color-hover);
+  border-radius: 4px;
+}
+
+.workflow-output::-webkit-scrollbar-thumb {
+  background: var(--color-border);
+  border-radius: 4px;
+}
+
+.workflow-output::-webkit-scrollbar-thumb:hover {
+  background: var(--color-primary);
 }
 
 .workflow-form {
@@ -332,7 +367,7 @@ select.workflow-input option {
 }
 
 footer {
-  margin-top: 4rem;
+  margin-top: 2rem;
   padding-top: 2rem;
   border-top: 1px solid var(--color-border);
 }
@@ -356,4 +391,71 @@ footer {
 .footer-links a:hover {
   opacity: 0.8;
   text-decoration: underline;
+}
+
+.durable-objects-intro {
+  margin: 4rem 0;
+  padding: 2rem;
+  background: var(--color-hover);
+  border-radius: 8px;
+  border: 1px solid var(--color-border);
+}
+
+.durable-objects-intro h2 {
+  color: var(--color-heading);
+  font-size: 1.8rem;
+  margin-bottom: 1rem;
+}
+
+.durable-objects-intro > p {
+  color: var(--color-text);
+  font-size: 1.1rem;
+  margin-bottom: 2rem;
+}
+
+.benefits-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 1.5rem;
+}
+
+.benefit-card {
+  background: var(--color-background);
+  padding: 1.5rem;
+  border-radius: 6px;
+  border: 1px solid var(--color-border);
+  transition: transform 0.2s ease-in-out;
+}
+
+.benefit-card:hover {
+  transform: translateY(-2px);
+}
+
+.benefit-card h3 {
+  color: var(--color-primary);
+  font-size: 1.2rem;
+  margin-bottom: 0.75rem;
+}
+
+.benefit-card p {
+  color: var(--color-text);
+  font-size: 0.95rem;
+  line-height: 1.5;
+  margin: 0;
+}
+
+@media (max-width: 768px) {
+  .durable-objects-intro {
+    padding: 1.5rem;
+    margin: 1.5rem 0 3rem;
+  }
+
+  .benefits-grid {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+
+  .benefit-card {
+    padding: 1.25rem;
+  }
 }

@@ -277,6 +277,17 @@ function PatternSection({
     return "";
   };
 
+  const formatOutput = (output: string) => {
+    try {
+      // Try to parse as JSON first
+      const parsed = JSON.parse(output);
+      return JSON.stringify(parsed, null, 2);
+    } catch {
+      // If not JSON, return as is
+      return output;
+    }
+  };
+
   return (
     <section className="pattern-section">
       <h2>
@@ -307,10 +318,11 @@ function PatternSection({
               )}
             </button>
           </div>
-          <div className="workflow-output">
-            {workflowState.output ||
-              `Enter input above and click 'Run Workflow' to see ${title} in action`}
-          </div>
+          <pre className="workflow-output">
+            {workflowState.output
+              ? formatOutput(workflowState.output)
+              : `Enter input above and click 'Run Workflow' to see ${title} in action`}
+          </pre>
         </div>
       </div>
     </section>
@@ -403,6 +415,67 @@ export default function App() {
           />
         ))}
       </main>
+
+      <section className="durable-objects-intro">
+        <h2>Why Durable Objects?</h2>
+        <p>
+          Cloudflare's Durable Objects provide the perfect environment for
+          hosting AI agents:
+        </p>
+
+        <div className="benefits-grid">
+          <div className="benefit-card">
+            <h3>Persistent State</h3>
+            <p>
+              Agents continue running even when browser tabs are closed or
+              refreshed, maintaining their state and context throughout
+              long-running tasks.
+            </p>
+          </div>
+
+          <div className="benefit-card">
+            <h3>Real-time Updates</h3>
+            <p>
+              WebSocket connections enable live streaming of agent progress,
+              thoughts, and results directly to any connected client, providing
+              immediate feedback.
+            </p>
+          </div>
+
+          <div className="benefit-card">
+            <h3>Global Scale</h3>
+            <p>
+              Agents run at the edge, automatically scaling across Cloudflare's
+              worldwide network, ensuring low-latency responses regardless of
+              user location.
+            </p>
+          </div>
+
+          <div className="benefit-card">
+            <h3>Flexible Triggers</h3>
+            <p>
+              Agents can be activated through various means: HTTP requests,
+              scheduled cron jobs, email handlers, or other server-side events.
+            </p>
+          </div>
+
+          <div className="benefit-card">
+            <h3>Memory Isolation</h3>
+            <p>
+              Each agent runs in its own isolated environment, preventing
+              resource contention and ensuring reliable performance.
+            </p>
+          </div>
+
+          <div className="benefit-card">
+            <h3>Cost Effective</h3>
+            <p>
+              Pay only for the compute time your agents use, with no idle costs
+              and automatic scaling based on demand.
+            </p>
+          </div>
+        </div>
+      </section>
 
       <footer>
         <div className="footer-links">
