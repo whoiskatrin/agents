@@ -2,7 +2,7 @@
   "name": "@cloudflare/agents-anthropic-patterns",
   "version": "0.0.0",
   "scripts": {
-    "build": "esbuild src/client.tsx --bundle --outdir=public/dist --sourcemap --platform=browser --format=esm",
+    "build": "esbuild src/client.tsx --bundle --minify --outdir=public/dist --sourcemap --platform=browser --format=esm",
     "start": "wangler dev"
   },
   "keywords": [],
