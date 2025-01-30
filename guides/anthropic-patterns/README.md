@@ -19,7 +19,7 @@ Each pattern is implemented as a Durable Object, providing persistence, real-tim
 ### Frontend
 
 - React application with TypeScript
-- Real-time WebSocket connections to Durable Objects
+- Real-time WebSocket connections to Durable Objects (powered by PartySocket, a reconnecting websocket library with a react hook)
 - Dark mode support
 - Responsive design
 
@@ -55,7 +55,7 @@ Each pattern is implemented as a Durable Object, providing persistence, real-tim
 
 4. Run the development server:
    ```bash
-   npm run dev
+   npm start
    ```
 
 ## Deployment
