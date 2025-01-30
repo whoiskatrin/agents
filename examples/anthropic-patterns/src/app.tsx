@@ -2,6 +2,12 @@ import { useEffect, useState } from "react";
 import { usePartySocket } from "partysocket/react";
 import "./app.css";
 
+import sequentialCode from "./flows/01 sequential.txt";
+import routingCode from "./flows/02 routing.txt";
+import parallelCode from "./flows/03 parallel.txt";
+import orchestratorCode from "./flows/04 orchestrator.txt";
+import evaluatorCode from "./flows/05 evaluator.txt";
+
 type ToastType = "success" | "error" | "info";
 
 type Toast = {
@@ -27,6 +33,7 @@ type PatternProps = {
   title: string;
   description: string;
   image: string;
+  code: string;
   index: number;
 };
 
@@ -103,8 +110,11 @@ function PatternSection({
   title,
   description,
   image,
+  code,
   index,
 }: PatternProps) {
+  const [activeTab, setActiveTab] = useState<"diagram" | "code">("diagram");
+
   const socket = usePartySocket({
     party: type,
     room: "default-room",
@@ -362,8 +372,35 @@ function PatternSection({
         {index + 1}. {title}
       </h2>
       <div className="pattern-content">
-        <div className="pattern-image">
-          <img src={image} alt={`${title} workflow diagram`} />
+        <div className="tab-container">
+          <div className="tab-buttons">
+            <button
+              className={`tab-button ${
+                activeTab === "diagram" ? "active" : ""
+              }`}
+              onClick={() => setActiveTab("diagram")}
+            >
+              Diagram
+            </button>
+            <button
+              className={`tab-button ${activeTab === "code" ? "active" : ""}`}
+              onClick={() => setActiveTab("code")}
+            >
+              Code
+            </button>
+          </div>
+          <div className="tab-content">
+            <div
+              className={`tab-pane ${activeTab === "diagram" ? "active" : ""}`}
+            >
+              <div className="pattern-image">
+                <img src={image} alt={`${title} workflow diagram`} />
+              </div>
+            </div>
+            <div className={`tab-pane ${activeTab === "code" ? "active" : ""}`}>
+              <div className="code-content">{code}</div>
+            </div>
+          </div>
         </div>
         <p className="pattern-description">{description}</p>
         <div className="workflow-runner">
@@ -447,30 +484,35 @@ export default function App() {
       description:
         "Decomposes tasks into a sequence of steps, where each LLM call processes the output of the previous one.",
       image: "/flows/01 sequential.png",
+      code: sequentialCode,
     },
     routing: {
       title: "Routing",
       description:
         "Classifies input and directs it to specialized followup tasks, allowing for separation of concerns.",
       image: "/flows/02 routing.png",
+      code: routingCode,
     },
     parallel: {
       title: "Parallelization",
       description:
         "Enables simultaneous task processing through sectioning or voting mechanisms.",
       image: "/flows/03 parallel.png",
+      code: parallelCode,
     },
     orchestrator: {
       title: "Orchestrator-Workers",
       description:
         "A central LLM dynamically breaks down tasks, delegates to worker LLMs, and synthesizes results.",
       image: "/flows/04 orchestrator.png",
+      code: orchestratorCode,
     },
     evaluator: {
       title: "Evaluator-Optimizer",
       description:
         "One LLM generates responses while another provides evaluation and feedback in a loop.",
       image: "/flows/05 evaluator.png",
+      code: evaluatorCode,
     },
   };
 
@@ -525,6 +567,7 @@ export default function App() {
             title={pattern.title}
             description={pattern.description}
             image={pattern.image}
+            code={pattern.code}
             index={index}
           />
         ))}

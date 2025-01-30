@@ -30,5 +30,8 @@
     "workers-ai-provider": "^0.0.10",
     "wrangler": "^3.106.0",
     "zod": "^3.24.1"
+  },
+  "overrides": {
+    "esbuild": "^0.24.1"
   }
 }

@@ -559,3 +559,68 @@ footer {
 .toast.removing {
   animation: slideOut 0.3s ease-out forwards;
 }
+
+/* Tab Container Styles */
+.tab-container {
+  width: 100%;
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+.tab-buttons {
+  display: flex;
+  gap: 1rem;
+  margin-bottom: 1rem;
+  border-bottom: 1px solid var(--color-border);
+  padding-bottom: 0.5rem;
+}
+
+.tab-button {
+  background: none;
+  border: none;
+  padding: 0.5rem 1rem;
+  cursor: pointer;
+  color: var(--color-text);
+  font-size: 0.9rem;
+  font-weight: 500;
+  opacity: 0.7;
+  transition: all 0.2s ease;
+  border-radius: 4px;
+}
+
+.tab-button:hover {
+  background: var(--color-hover);
+  opacity: 0.9;
+}
+
+.tab-button.active {
+  color: var(--color-primary);
+  opacity: 1;
+  background: var(--color-hover);
+}
+
+.tab-content {
+  background: var(--color-background);
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.tab-pane {
+  display: none;
+  padding: 1rem;
+}
+
+.tab-pane.active {
+  display: block;
+}
+
+.code-content {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 0.9rem;
+  line-height: 1.5;
+  padding: 1rem;
+  background: var(--color-hover);
+  border-radius: 4px;
+  overflow-x: auto;
+  white-space: pre;
+}
