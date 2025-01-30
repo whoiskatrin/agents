@@ -25,7 +25,10 @@ type Env = {
 
 // createAgent is a helper function to generate an agent class
 // with helpers for sending/receiving messages to the client and updating the state
-function createAgent(name: string, workflow: (props: any) => Promise<any>) {
+function createAgent(
+  name: string,
+  workflow: (props: any, toast: (message: string) => void) => Promise<any>
+) {
   return class Agent extends Server<Env> {
     state: {
       isRunning: boolean;
@@ -44,11 +47,24 @@ function createAgent(name: string, workflow: (props: any) => Promise<any>) {
       );
     }
 
+    toast = (message: string, type: "info" | "error" = "info") => {
+      this.broadcast(
+        JSON.stringify({
+          type: "toast",
+          toast: {
+            message,
+            type,
+          },
+        })
+      );
+    };
+
     onMessage(connection: Connection, message: WSMessage) {
       const data = JSON.parse(message as string);
       switch (data.type) {
         case "run":
-          this.run();
+          console.log("running", name, data.input);
+          this.run({ input: data.input });
           break;
         default:
           console.log("Unknown message type", data.type);
@@ -60,17 +76,20 @@ function createAgent(name: string, workflow: (props: any) => Promise<any>) {
       this.broadcast(JSON.stringify({ type: "state", state: this.state }));
     }
 
-    async run() {
+    async run(data: { input: any }) {
       if (this.state.isRunning) return;
       this.setState({ isRunning: true, output: undefined });
 
-      console.log("running", name);
+      // console.log("running", name);
 
-      const result = await workflow({
-        input: "Hello, world!",
-      });
-      console.log("result", result);
-      this.setState({ isRunning: false, output: JSON.stringify(result) });
+      try {
+        const result = await workflow(data.input, this.toast);
+        // console.log("result", result);
+        this.setState({ isRunning: false, output: JSON.stringify(result) });
+      } catch (error) {
+        this.toast(`An error occurred: ${error}`);
+        this.setState({ isRunning: false, output: JSON.stringify(error) });
+      }
     }
   };
 }
@@ -82,7 +101,7 @@ function createAgent(name: string, workflow: (props: any) => Promise<any>) {
 // A SequentialProcessing class to process tasks in a sequential manner
 export const Sequential = createAgent(
   "Sequential",
-  async (props: { input: string }) => {
+  async (props: { input: string }, toast: (message: string) => void) => {
     // This agent uses a prompt chaining workflow, ideal for tasks that can be decomposed into fixed subtasks.
     // It trades off latency for higher accuracy by making each LLM call an easier task.
     const model = openai("gpt-4o");
@@ -92,6 +111,7 @@ export const Sequential = createAgent(
       model,
       prompt: `Write persuasive marketing copy for: ${props.input}. Focus on benefits and emotional appeal.`,
     });
+    toast("Copy generated");
 
     // Perform quality check on copy
     const { object: qualityMetrics } = await generateObject({
@@ -108,7 +128,7 @@ export const Sequential = createAgent(
   
       Copy to evaluate: ${copy}`,
     });
-
+    toast("Quality check complete");
     // If quality check fails, regenerate with more specific instructions
     if (
       !qualityMetrics.hasCallToAction ||
@@ -131,6 +151,8 @@ export const Sequential = createAgent(
       return { copy: improvedCopy, qualityMetrics };
     }
 
+    toast("Copy improved");
+
     return { copy, qualityMetrics };
   }
 );
@@ -138,7 +160,7 @@ export const Sequential = createAgent(
 // A Routing class to route tasks to the appropriate agent
 export const Routing = createAgent(
   "Routing",
-  async (props: { query: string }) => {
+  async (props: { query: string }, toast: (message: string) => void) => {
     // This agent uses a routing workflow, which classifies input and directs it to specialized follow-up tasks.
     // It is effective for complex tasks with distinct categories that are better handled separately.
     const model = openai("gpt-4o");
@@ -159,7 +181,7 @@ export const Routing = createAgent(
       2. Complexity (simple or complex)
       3. Brief reasoning for classification`,
     });
-
+    toast("Query classified");
     // Route based on classification
     // Set model and system prompt based on query type and complexity
     const { text: response } = await generateText({
@@ -177,7 +199,7 @@ export const Routing = createAgent(
       }[classification.type],
       prompt: props.query,
     });
-
+    toast("Response generated");
     return { response, classification };
   }
 );
@@ -185,7 +207,7 @@ export const Routing = createAgent(
 // A ParallelProcessing class to process tasks in parallel
 export const Parallel = createAgent(
   "Parallel",
-  async (props: { code: string }) => {
+  async (props: { code: string }, toast: (message: string) => void) => {
     // This agent uses a parallelization workflow, effective for tasks that can be divided into independent subtasks.
     // It allows for speed and multiple perspectives, improving confidence in results.
     const model = openai("gpt-4o");
@@ -233,6 +255,8 @@ export const Parallel = createAgent(
         }),
       ]);
 
+    toast("Code reviews complete");
+
     const reviews = [
       { ...securityReview.object, type: "security" },
       { ...performanceReview.object, type: "performance" },
@@ -247,6 +271,8 @@ export const Parallel = createAgent(
     ${JSON.stringify(reviews, null, 2)}`,
     });
 
+    toast("Code review summary complete");
+
     return { reviews, summary };
   }
 );
@@ -254,7 +280,10 @@ export const Parallel = createAgent(
 // An OrchestratorWorker class to orchestrate the workers
 export const Orchestrator = createAgent(
   "Orchestrator",
-  async (props: { featureRequest: string }) => {
+  async (
+    props: { featureRequest: string },
+    toast: (message: string) => void
+  ) => {
     // This agent uses an orchestrator-workers workflow, suitable for complex tasks where subtasks aren't pre-defined.
     // It dynamically breaks down tasks and delegates them to worker LLMs, synthesizing their results.
     const { object: implementationPlan } = await generateObject({
@@ -274,7 +303,7 @@ export const Orchestrator = createAgent(
       prompt: `Analyze this feature request and create an implementation plan:
       ${props.featureRequest}`,
     });
-
+    toast("Implementation plan created");
     // Workers: Execute the planned changes
     const fileChanges = await Promise.all(
       implementationPlan.files.map(async (file) => {
@@ -301,7 +330,7 @@ export const Orchestrator = createAgent(
           Consider the overall feature context:
           ${props.featureRequest}`,
         });
-
+        toast("File change implemented");
         return {
           file,
           implementation: change,
@@ -309,6 +338,7 @@ export const Orchestrator = createAgent(
       })
     );
 
+    toast("File changes implemented");
     return {
       plan: implementationPlan,
       changes: fileChanges,
@@ -319,12 +349,15 @@ export const Orchestrator = createAgent(
 // An EvaluatorOptimizer class to evaluate and optimize the agents
 export const Evaluator = createAgent(
   "Evaluator",
-  async (props: { text: string; targetLanguage: string }) => {
+  async (
+    props: { text: string; targetLanguage: string },
+    toast: (message: string) => void
+  ) => {
     const model = openai("gpt-4o");
 
     let currentTranslation = "";
     let iterations = 0;
-    const MAX_ITERATIONS = 3;
+    const MAX_ITERATIONS = 1;
 
     // Initial translation
     const { text: translation } = await generateText({
@@ -333,6 +366,8 @@ export const Evaluator = createAgent(
       prompt: `Translate this text to ${props.targetLanguage}, preserving tone and cultural nuances:
       ${props.text}`,
     });
+
+    toast("Initial translation complete");
 
     currentTranslation = translation;
 
@@ -362,6 +397,8 @@ export const Evaluator = createAgent(
         4. Cultural accuracy`,
       });
 
+      toast(`Evaluation complete: ${evaluation.qualityScore}`);
+
       // Check if quality meets threshold
       if (
         evaluation.qualityScore >= 8 &&
@@ -384,9 +421,13 @@ export const Evaluator = createAgent(
         Current Translation: ${currentTranslation}`,
       });
 
+      toast("Improved translation complete");
+
       currentTranslation = improvedTranslation;
       iterations++;
     }
+
+    toast("Final translation complete");
 
     return {
       finalTranslation: currentTranslation,

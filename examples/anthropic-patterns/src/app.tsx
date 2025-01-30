@@ -2,6 +2,14 @@ import { useEffect, useState } from "react";
 import { usePartySocket } from "partysocket/react";
 import "./app.css";
 
+type ToastType = "success" | "error" | "info";
+
+type Toast = {
+  id: number;
+  type: ToastType;
+  message: string;
+};
+
 type WorkflowState = {
   isRunning: boolean;
   output: string;
@@ -43,6 +51,53 @@ const LANGUAGES = [
   { value: "portuguese", label: "Portuguese" },
 ] as const;
 
+function Toast({ toast, onClose }: { toast: Toast; onClose: () => void }) {
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      onClose();
+    }, 5000);
+
+    return () => clearTimeout(timer);
+  }, [onClose]);
+
+  const getIcon = (type: ToastType) => {
+    switch (type) {
+      case "success":
+        return "✅";
+      case "error":
+        return "❌";
+      case "info":
+        return "ℹ️";
+    }
+  };
+
+  return (
+    <div className={`toast ${toast.type}`}>
+      <span className="toast-icon">{getIcon(toast.type)}</span>
+      <span className="toast-message">{toast.message}</span>
+      <span className="toast-close" onClick={onClose}>
+        ✕
+      </span>
+    </div>
+  );
+}
+
+function ToastContainer({
+  toasts,
+  onClose,
+}: {
+  toasts: Toast[];
+  onClose: (id: number) => void;
+}) {
+  return (
+    <div className="toast-container">
+      {toasts.map((toast) => (
+        <Toast key={toast.id} toast={toast} onClose={() => onClose(toast.id)} />
+      ))}
+    </div>
+  );
+}
+
 function PatternSection({
   type,
   title,
@@ -55,10 +110,18 @@ function PatternSection({
     room: "default-room",
     onMessage: (e) => {
       const data = JSON.parse(e.data);
-      console.log(data);
       switch (data.type) {
         case "state":
           setWorkflowState(data.state);
+          break;
+        case "toast":
+          const event = new CustomEvent("showToast", {
+            detail: {
+              type: data.toast.type as ToastType,
+              message: data.toast.message,
+            },
+          });
+          window.dispatchEvent(event);
           break;
       }
     },
@@ -68,25 +131,6 @@ function PatternSection({
     isRunning: false,
     output: "",
   });
-
-  const runWorkflow = async () => {
-    setWorkflowState((prev) => ({ ...prev, isRunning: true }));
-
-    // Simulate API delay
-    // await new Promise((resolve) => setTimeout(resolve, 2000));
-
-    setWorkflowState((state) => ({
-      ...state,
-      isRunning: false,
-    }));
-
-    socket.send(
-      JSON.stringify({
-        type: "run",
-        input: formState,
-      })
-    );
-  };
 
   const [formState, setFormState] = useState<FormState[typeof type]>(() => {
     switch (type) {
@@ -288,6 +332,30 @@ function PatternSection({
     }
   };
 
+  const runWorkflow = async () => {
+    setWorkflowState((prev) => ({ ...prev, isRunning: true }));
+
+    try {
+      socket.send(
+        JSON.stringify({
+          type: "run",
+          input: formState,
+        })
+      );
+      // Show success toast when workflow starts
+      const event = new CustomEvent("showToast", {
+        detail: { type: "info", message: `Started ${title} workflow...` },
+      });
+      window.dispatchEvent(event);
+    } catch (error) {
+      // Show error toast if something goes wrong
+      const event = new CustomEvent("showToast", {
+        detail: { type: "error", message: `Failed to start ${title} workflow` },
+      });
+      window.dispatchEvent(event);
+    }
+  };
+
   return (
     <section className="pattern-section">
       <h2>
@@ -331,19 +399,40 @@ function PatternSection({
 
 export default function App() {
   const [theme, setTheme] = useState<"light" | "dark">("light");
+  const [toasts, setToasts] = useState<Toast[]>([]);
+
+  const addToast = (type: ToastType, message: string) => {
+    const id = Date.now();
+    setToasts((prev) => [...prev, { id, type, message }]);
+  };
+
+  const removeToast = (id: number) => {
+    setToasts((prev) => prev.filter((toast) => toast.id !== id));
+  };
 
   useEffect(() => {
-    // Check for user's preferred color scheme
+    // Theme detection code
     const prefersDark = window.matchMedia(
       "(prefers-color-scheme: dark)"
     ).matches;
     setTheme(prefersDark ? "dark" : "light");
-
-    // Add theme to document
     document.documentElement.setAttribute(
       "data-theme",
       prefersDark ? "dark" : "light"
     );
+
+    // Add toast event listener
+    const handleToast = (
+      e: CustomEvent<{ type: ToastType; message: string }>
+    ) => {
+      addToast(e.detail.type, e.detail.message);
+    };
+
+    window.addEventListener("showToast", handleToast as EventListener);
+
+    return () => {
+      window.removeEventListener("showToast", handleToast as EventListener);
+    };
   }, []);
 
   const toggleTheme = () => {
@@ -387,6 +476,7 @@ export default function App() {
 
   return (
     <div className="container">
+      <ToastContainer toasts={toasts} onClose={removeToast} />
       <header>
         <div className="theme-toggle" onClick={toggleTheme}>
           <span className="theme-toggle-icon">
