@@ -2,15 +2,10 @@ import { useEffect, useState, useMemo } from "react";
 import { usePartySocket } from "partysocket/react";
 import "./app.css";
 
-// @ts-ignore
 import sequentialCode from "./flows/01 sequential.txt";
-// @ts-ignore
 import routingCode from "./flows/02 routing.txt";
-// @ts-ignore
 import parallelCode from "./flows/03 parallel.txt";
-// @ts-ignore
 import orchestratorCode from "./flows/04 orchestrator.txt";
-// @ts-ignore
 import evaluatorCode from "./flows/05 evaluator.txt";
 
 type ToastType = "success" | "error" | "info";
@@ -579,7 +574,7 @@ export default function App() {
               target="_blank"
               rel="noopener noreferrer"
             >
-              Vercel's AI SDK
+              AI SDK
             </a>
             , running in Cloudflare's Durable Objects.
           </p>

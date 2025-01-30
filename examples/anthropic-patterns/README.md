@@ -1,6 +1,6 @@
 # Agent Patterns Demo
 
-This project demonstrates different patterns for building AI agents, based on [Anthropic's research](https://www.anthropic.com/research/building-effective-agents), implemented using Cloudflare's Durable Objects and Vercel's AI SDK.
+This project demonstrates different patterns for building AI agents, based on [Anthropic's research](https://www.anthropic.com/research/building-effective-agents), implemented using Cloudflare's Durable Objects and the [AI SDK](https://sdk.vercel.ai/).
 
 ## Overview
 
@@ -27,7 +27,7 @@ Each pattern is implemented as a Durable Object, providing persistence, real-tim
 
 - Cloudflare Durable Objects for agent state management
 - WebSocket connections for live updates
-- OpenAI integration via Vercel's AI SDK
+- OpenAI integration via AI SDK
 - PartyServer for WebSocket management
 
 ## Features
@@ -80,7 +80,7 @@ Each pattern is implemented as a Durable Object class:
 
 ### WebSocket Communication
 
-The frontend maintains WebSocket connections to each Durable Object instance:
+The frontend maintains WebSocket connections to each Durable Object instance. The websocket sends state updates to the frontend.
 
 ```typescript
 const socket = usePartySocket({
@@ -133,5 +133,5 @@ MIT License - feel free to use this code in your own projects.
 ## Acknowledgments
 
 - Based on research by [Anthropic](https://www.anthropic.com/research/building-effective-agents)
-- Uses [Vercel's AI SDK](https://sdk.vercel.ai/docs/foundations/agents)
+- Uses [AI SDK](https://sdk.vercel.ai/docs/foundations/agents)
 - Built on [Cloudflare Workers](https://workers.cloudflare.com/) and [Durable Objects](https://developers.cloudflare.com/workers/learning/using-durable-objects)

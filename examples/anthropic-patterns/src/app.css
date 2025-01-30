@@ -180,13 +180,13 @@ header p {
 /* Invert colors in dark mode */
 [data-theme="dark"] .pattern-content img {
   filter: invert(1) hue-rotate(180deg);
+  box-shadow: 0 4px 6px rgba(255, 255, 255, 0.1);
 }
 
 /* Add a subtle background in dark mode to improve contrast */
 [data-theme="dark"] .pattern-image {
   background: var(--color-hover);
   border-radius: 4px;
-  padding: 1rem;
 }
 
 .pattern-description {

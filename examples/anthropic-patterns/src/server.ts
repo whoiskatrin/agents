@@ -30,6 +30,9 @@ function createAgent(
   workflow: (props: any, toast: (message: string) => void) => Promise<any>
 ) {
   return class Agent extends Server<Env> {
+    static options = {
+      hibernate: true,
+    };
     state: {
       isRunning: boolean;
       output: any;
@@ -63,11 +66,10 @@ function createAgent(
       const data = JSON.parse(message as string);
       switch (data.type) {
         case "run":
-          console.log("running", name, data.input);
           this.run({ input: data.input });
           break;
         default:
-          console.log("Unknown message type", data.type);
+          console.error("Unknown message type", data.type);
       }
     }
 
@@ -80,11 +82,8 @@ function createAgent(
       if (this.state.isRunning) return;
       this.setState({ isRunning: true, output: undefined });
 
-      // console.log("running", name);
-
       try {
         const result = await workflow(data.input, this.toast);
-        // console.log("result", result);
         this.setState({ isRunning: false, output: JSON.stringify(result) });
       } catch (error) {
         this.toast(`An error occurred: ${error}`);
@@ -95,7 +94,7 @@ function createAgent(
 }
 
 // Here are the patterns, implemented as simple async functions
-// These were copied directly from the Vercel AI SDK examples
+// These were copied directly from the AI SDK examples
 // https://sdk.vercel.ai/docs/foundations/agents
 
 // A SequentialProcessing class to process tasks in a sequential manner
