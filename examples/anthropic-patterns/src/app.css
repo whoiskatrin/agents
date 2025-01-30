@@ -614,6 +614,13 @@ footer {
   display: block;
 }
 
+.code-tab-container {
+  position: relative;
+  background: var(--color-hover);
+  border-radius: 4px;
+  padding-bottom: 2.5rem; /* Space for the expand button */
+}
+
 .code-content {
   font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
   font-size: 0.9rem;
@@ -622,5 +629,43 @@ footer {
   background: var(--color-hover);
   border-radius: 4px;
   overflow-x: auto;
-  white-space: pre;
+  white-space: pre-wrap;
+  max-height: 200px;
+  overflow-y: auto;
+  transition: max-height 0.3s ease-out;
+}
+
+.code-content.expanded {
+  max-height: none;
+}
+
+.expand-button {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  padding: 0.5rem;
+  background: linear-gradient(transparent, var(--color-hover) 50%);
+  display: flex;
+  justify-content: center;
+  cursor: pointer;
+  color: var(--color-primary);
+  font-size: 0.9rem;
+  font-weight: 500;
+  border: none;
+  width: 100%;
+  transition: opacity 0.2s ease;
+}
+
+.expand-button:hover {
+  opacity: 0.9;
+}
+
+.expand-button .icon {
+  margin-left: 0.5rem;
+  transition: transform 0.2s ease;
+}
+
+.expand-button .icon.expanded {
+  transform: rotate(180deg);
 }

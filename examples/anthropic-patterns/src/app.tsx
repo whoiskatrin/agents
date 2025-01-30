@@ -2,10 +2,15 @@ import { useEffect, useState } from "react";
 import { usePartySocket } from "partysocket/react";
 import "./app.css";
 
+// @ts-ignore
 import sequentialCode from "./flows/01 sequential.txt";
+// @ts-ignore
 import routingCode from "./flows/02 routing.txt";
+// @ts-ignore
 import parallelCode from "./flows/03 parallel.txt";
+// @ts-ignore
 import orchestratorCode from "./flows/04 orchestrator.txt";
+// @ts-ignore
 import evaluatorCode from "./flows/05 evaluator.txt";
 
 type ToastType = "success" | "error" | "info";
@@ -114,6 +119,7 @@ function PatternSection({
   index,
 }: PatternProps) {
   const [activeTab, setActiveTab] = useState<"diagram" | "code">("diagram");
+  const [isCodeExpanded, setIsCodeExpanded] = useState(false);
 
   const socket = usePartySocket({
     party: type,
@@ -398,7 +404,22 @@ function PatternSection({
               </div>
             </div>
             <div className={`tab-pane ${activeTab === "code" ? "active" : ""}`}>
-              <div className="code-content">{code}</div>
+              <div className="code-tab-container">
+                <div
+                  className={`code-content ${isCodeExpanded ? "expanded" : ""}`}
+                >
+                  {code}
+                </div>
+                <button
+                  className="expand-button"
+                  onClick={() => setIsCodeExpanded(!isCodeExpanded)}
+                >
+                  {isCodeExpanded ? "Collapse" : "Expand"}
+                  <span className={`icon ${isCodeExpanded ? "expanded" : ""}`}>
+                    ▼
+                  </span>
+                </button>
+              </div>
             </div>
           </div>
         </div>
