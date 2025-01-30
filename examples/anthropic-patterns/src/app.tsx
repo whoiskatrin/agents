@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { usePartySocket } from "partysocket/react";
 import "./app.css";
 
@@ -110,6 +110,15 @@ function ToastContainer({
   );
 }
 
+function getOrCreateSessionId() {
+  const stored = localStorage.getItem("sessionId");
+  if (stored) return stored;
+
+  const newId = crypto.randomUUID();
+  localStorage.setItem("sessionId", newId);
+  return newId;
+}
+
 function PatternSection({
   type,
   title,
@@ -117,13 +126,14 @@ function PatternSection({
   image,
   code,
   index,
-}: PatternProps) {
+  sessionId,
+}: PatternProps & { sessionId: string }) {
   const [activeTab, setActiveTab] = useState<"diagram" | "code">("diagram");
   const [isCodeExpanded, setIsCodeExpanded] = useState(false);
 
   const socket = usePartySocket({
     party: type,
-    room: "default-room",
+    room: sessionId,
     onMessage: (e) => {
       const data = JSON.parse(e.data);
       switch (data.type) {
@@ -458,6 +468,7 @@ function PatternSection({
 export default function App() {
   const [theme, setTheme] = useState<"light" | "dark">("light");
   const [toasts, setToasts] = useState<Toast[]>([]);
+  const sessionId = useMemo(() => getOrCreateSessionId(), []);
 
   const addToast = (type: ToastType, message: string) => {
     const id = Date.now();
@@ -590,6 +601,7 @@ export default function App() {
             image={pattern.image}
             code={pattern.code}
             index={index}
+            sessionId={sessionId}
           />
         ))}
       </main>
