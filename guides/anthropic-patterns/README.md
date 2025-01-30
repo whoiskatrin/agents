@@ -25,10 +25,10 @@ Each pattern is implemented as a Durable Object, providing persistence, real-tim
 
 ### Backend
 
-- Cloudflare Durable Objects for agent state management
+- Cloudflare Durable Objects + PartyServer for agent state management
 - WebSocket connections for live updates
 - OpenAI integration via AI SDK
-- PartyServer for WebSocket management
+- AI SDK for defining agent workflows
 
 ## Features
 
@@ -36,7 +36,7 @@ Each pattern is implemented as a Durable Object, providing persistence, real-tim
 - **Real-time Updates**: See agent progress as it happens
 - **Persistent State**: Agents continue running even if you close the browser
 - **Global Scaling**: Runs on Cloudflare's edge network
-- **Dark Mode**: Supports system preferences and manual toggle
+- **Bonus: Dark Mode**: Supports system preferences and manual toggle
 
 ## Getting Started
 
@@ -70,13 +70,7 @@ npm run deploy
 
 ### Durable Objects
 
-Each pattern is implemented as a Durable Object class:
-
-- `Sequential.ts`: Handles step-by-step processing
-- `Routing.ts`: Manages query classification and routing
-- `Parallel.ts`: Coordinates concurrent tasks
-- `Orchestrator.ts`: Manages task delegation
-- `Evaluator.ts`: Handles feedback loops
+We have an `createAgent` factory function that creates a new Durable Object class for a given pattern/workflow. The template for the class includes basic state management and websocket communication. So by calling `createAgent(async () => {/* run the pattern */})` we get a new Durable Object class that can be used to create an instance. We create the 5 types of agents and export them from the worker, and wire them up as bindings in `wrangler.toml`.
 
 ### WebSocket Communication
 
@@ -97,6 +91,8 @@ const socket = usePartySocket({
 });
 ```
 
+The frontend also triggers the workflow by sending a `run` message to the websocket with initial input.
+
 ### State Management
 
 Each Durable Object maintains its own state:
@@ -110,6 +106,8 @@ state: {
   output: undefined,
 };
 ```
+
+Read more in the [source code](src/server.ts).
 
 ## Why Durable Objects?
 

@@ -1,4 +1,4 @@
-# Cloudflare Agents
+# 🧠 Cloudflare Agents
 
 🚧 **Work in Progress** 🚧
 
@@ -8,9 +8,9 @@ A collection of examples and tools for building AI agents that run on Cloudflare
 
 This is an early-stage project. We're currently building out:
 
-- Core agent framework
 - Example implementations
 - Documentation and guides
+- and maybe, a core agent framework
 
 Stay tuned for updates!
 
