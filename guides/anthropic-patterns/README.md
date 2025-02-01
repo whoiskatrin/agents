@@ -2,6 +2,9 @@
 
 This project demonstrates different patterns for building AI agents, based on [Anthropic's research](https://www.anthropic.com/research/building-effective-agents), implemented using Cloudflare's Durable Objects and the [AI SDK](https://sdk.vercel.ai/).
 
+<img width="893" alt="image" src="https://github.com/user-attachments/assets/160fe1aa-782d-4619-94b4-55f009105f37" />
+
+
 ## Overview
 
 The demo showcases five fundamental patterns for building AI agents:
