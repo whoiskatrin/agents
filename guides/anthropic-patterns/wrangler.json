@@ -1,4 +1,5 @@
 {
+  "$schema": "../../node_modules/wrangler/config-schema.json",
   "name": "anthropic-agent-patterns",
   "main": "src/server.ts",
   "compatibility_date": "2025-01-29",
