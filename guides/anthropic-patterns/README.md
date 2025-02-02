@@ -4,7 +4,6 @@ This project demonstrates different patterns for building AI agents, based on [A
 
 <img width="893" alt="image" src="https://github.com/user-attachments/assets/160fe1aa-782d-4619-94b4-55f009105f37" />
 
-
 ## Overview
 
 The demo showcases five fundamental patterns for building AI agents:
@@ -32,6 +31,7 @@ Each pattern is implemented as a Durable Object, providing persistence, real-tim
 - WebSocket connections for live updates
 - OpenAI integration via AI SDK
 - AI SDK for defining agent workflows
+- [AI Gateway](https://developers.cloudflare.com/ai-gateway/) for caching and rate limiting
 
 ## Features
 
@@ -50,13 +50,23 @@ Each pattern is implemented as a Durable Object, providing persistence, real-tim
    npm install
    ```
 
-3. Create a `.env` file with your API keys:
+3. Create a `.dev.vars` file with your API keys:
 
    ```
    OPENAI_API_KEY=your_key_here
+   AI_GATEWAY_TOKEN=your_key_here
    ```
 
-4. Run the development server:
+4. Edit wrangler.json to set your account ID:
+
+   ```json
+   "account_id": "your_account_id_here"
+   "vars": {
+     "AI_GATEWAY_ACCOUNT_ID": "your_account_id_here"
+   }
+   ```
+
+5. Run the development server:
    ```bash
    npm start
    ```

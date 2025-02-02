@@ -1,0 +1,56 @@
+{
+  "name": "anthropic-agent-patterns",
+  "main": "src/server.ts",
+  "compatibility_date": "2025-01-29",
+  "account_id": "85d0c02b57ed75faf9b18f92d5c01602",
+
+  "assets": {
+    "directory": "public"
+  },
+
+  "vars": {
+    "AI_GATEWAY_ACCOUNT_ID": "85d0c02b57ed75faf9b18f92d5c01602"
+  },
+
+  "build": {
+    "command": "npm run build"
+  },
+
+  "durable_objects": {
+    "bindings": [
+      {
+        "name": "sequential",
+        "class_name": "Sequential"
+      },
+      {
+        "name": "routing",
+        "class_name": "Routing"
+      },
+      {
+        "name": "parallel",
+        "class_name": "Parallel"
+      },
+      {
+        "name": "orchestrator",
+        "class_name": "Orchestrator"
+      },
+      {
+        "name": "evaluator",
+        "class_name": "Evaluator"
+      }
+    ]
+  },
+
+  "migrations": [
+    {
+      "tag": "v1",
+      "new_sqlite_classes": [
+        "Sequential",
+        "Routing",
+        "Parallel",
+        "Orchestrator",
+        "Evaluator"
+      ]
+    }
+  ]
+}

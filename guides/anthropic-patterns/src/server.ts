@@ -6,16 +6,14 @@ import {
   Connection,
   WSMessage,
 } from "partyserver";
-import { createOpenAI } from "@ai-sdk/openai";
+import { createOpenAI, OpenAIProvider } from "@ai-sdk/openai";
 import { generateText, generateObject } from "ai";
 import { z } from "zod";
 
-const openai = createOpenAI({
-  // @ts-ignore we are replacing this at build time
-  apiKey: process.env.OPENAI_API_KEY,
-});
-
 type Env = {
+  OPENAI_API_KEY: string;
+  AI_GATEWAY_TOKEN: string;
+  AI_GATEWAY_ACCOUNT_ID: string;
   Sequential: DurableObjectNamespace<Server<Env>>;
   Routing: DurableObjectNamespace<Server<Env>>;
   Parallel: DurableObjectNamespace<Server<Env>>;
@@ -27,9 +25,22 @@ type Env = {
 // with helpers for sending/receiving messages to the client and updating the state
 function createAgent(
   name: string,
-  workflow: (props: any, toast: (message: string) => void) => Promise<any>
+  workflow: (
+    props: any,
+    ctx: {
+      toast: (message: string) => void;
+      openai: OpenAIProvider;
+    }
+  ) => Promise<any>
 ) {
   return class Agent extends Server<Env> {
+    openai = createOpenAI({
+      apiKey: this.env.OPENAI_API_KEY,
+      baseURL: `https://gateway.ai.cloudflare.com/v1/${this.env.AI_GATEWAY_ACCOUNT_ID}/anthropic-agent-patterns/openai`,
+      headers: {
+        "cf-aig-authorization": `Bearer ${this.env.AI_GATEWAY_TOKEN}`,
+      },
+    });
     static options = {
       hibernate: true,
     };
@@ -83,7 +94,10 @@ function createAgent(
       this.setState({ isRunning: true, output: undefined });
 
       try {
-        const result = await workflow(data.input, this.toast);
+        const result = await workflow(data.input, {
+          toast: this.toast,
+          openai: this.openai,
+        });
         this.setState({ isRunning: false, output: JSON.stringify(result) });
       } catch (error) {
         this.toast(`An error occurred: ${error}`);
@@ -100,17 +114,20 @@ function createAgent(
 // A SequentialProcessing class to process tasks in a sequential manner
 export const Sequential = createAgent(
   "Sequential",
-  async (props: { input: string }, toast: (message: string) => void) => {
+  async (
+    props: { input: string },
+    ctx: { toast: (message: string) => void; openai: OpenAIProvider }
+  ) => {
     // This agent uses a prompt chaining workflow, ideal for tasks that can be decomposed into fixed subtasks.
     // It trades off latency for higher accuracy by making each LLM call an easier task.
-    const model = openai("gpt-4o");
+    const model = ctx.openai("gpt-4o");
 
     // First step: Generate marketing copy
     const { text: copy } = await generateText({
       model,
       prompt: `Write persuasive marketing copy for: ${props.input}. Focus on benefits and emotional appeal.`,
     });
-    toast("Copy generated");
+    ctx.toast("Copy generated");
 
     // Perform quality check on copy
     const { object: qualityMetrics } = await generateObject({
@@ -127,7 +144,7 @@ export const Sequential = createAgent(
   
       Copy to evaluate: ${copy}`,
     });
-    toast("Quality check complete");
+    ctx.toast("Quality check complete");
     // If quality check fails, regenerate with more specific instructions
     if (
       !qualityMetrics.hasCallToAction ||
@@ -150,7 +167,7 @@ export const Sequential = createAgent(
       return { copy: improvedCopy, qualityMetrics };
     }
 
-    toast("Copy improved");
+    ctx.toast("Copy improved");
 
     return { copy, qualityMetrics };
   }
@@ -159,10 +176,13 @@ export const Sequential = createAgent(
 // A Routing class to route tasks to the appropriate agent
 export const Routing = createAgent(
   "Routing",
-  async (props: { query: string }, toast: (message: string) => void) => {
+  async (
+    props: { query: string },
+    ctx: { toast: (message: string) => void; openai: OpenAIProvider }
+  ) => {
     // This agent uses a routing workflow, which classifies input and directs it to specialized follow-up tasks.
     // It is effective for complex tasks with distinct categories that are better handled separately.
-    const model = openai("gpt-4o");
+    const model = ctx.openai("gpt-4o");
 
     // First step: Classify the query type
     const { object: classification } = await generateObject({
@@ -180,14 +200,14 @@ export const Routing = createAgent(
       2. Complexity (simple or complex)
       3. Brief reasoning for classification`,
     });
-    toast("Query classified");
+    ctx.toast("Query classified");
     // Route based on classification
     // Set model and system prompt based on query type and complexity
     const { text: response } = await generateText({
       model:
         classification.complexity === "simple"
-          ? openai("gpt-4o-mini")
-          : openai("o1-mini"),
+          ? ctx.openai("gpt-4o-mini")
+          : ctx.openai("o1-mini"),
       system: {
         general:
           "You are an expert customer service agent handling general inquiries.",
@@ -198,7 +218,7 @@ export const Routing = createAgent(
       }[classification.type],
       prompt: props.query,
     });
-    toast("Response generated");
+    ctx.toast("Response generated");
     return { response, classification };
   }
 );
@@ -206,10 +226,13 @@ export const Routing = createAgent(
 // A ParallelProcessing class to process tasks in parallel
 export const Parallel = createAgent(
   "Parallel",
-  async (props: { code: string }, toast: (message: string) => void) => {
+  async (
+    props: { code: string },
+    ctx: { toast: (message: string) => void; openai: OpenAIProvider }
+  ) => {
     // This agent uses a parallelization workflow, effective for tasks that can be divided into independent subtasks.
     // It allows for speed and multiple perspectives, improving confidence in results.
-    const model = openai("gpt-4o");
+    const model = ctx.openai("gpt-4o");
 
     // Run parallel reviews
     const [securityReview, performanceReview, maintainabilityReview] =
@@ -254,7 +277,7 @@ export const Parallel = createAgent(
         }),
       ]);
 
-    toast("Code reviews complete");
+    ctx.toast("Code reviews complete");
 
     const reviews = [
       { ...securityReview.object, type: "security" },
@@ -270,7 +293,7 @@ export const Parallel = createAgent(
     ${JSON.stringify(reviews, null, 2)}`,
     });
 
-    toast("Code review summary complete");
+    ctx.toast("Code review summary complete");
 
     return { reviews, summary };
   }
@@ -281,12 +304,12 @@ export const Orchestrator = createAgent(
   "Orchestrator",
   async (
     props: { featureRequest: string },
-    toast: (message: string) => void
+    ctx: { toast: (message: string) => void; openai: OpenAIProvider }
   ) => {
     // This agent uses an orchestrator-workers workflow, suitable for complex tasks where subtasks aren't pre-defined.
     // It dynamically breaks down tasks and delegates them to worker LLMs, synthesizing their results.
     const { object: implementationPlan } = await generateObject({
-      model: openai("o1"),
+      model: ctx.openai("o1"),
       schema: z.object({
         files: z.array(
           z.object({
@@ -302,7 +325,7 @@ export const Orchestrator = createAgent(
       prompt: `Analyze this feature request and create an implementation plan:
       ${props.featureRequest}`,
     });
-    toast("Implementation plan created");
+    ctx.toast("Implementation plan created");
     // Workers: Execute the planned changes
     const fileChanges = await Promise.all(
       implementationPlan.files.map(async (file) => {
@@ -317,7 +340,7 @@ export const Orchestrator = createAgent(
         }[file.changeType];
 
         const { object: change } = await generateObject({
-          model: openai("gpt-4o"),
+          model: ctx.openai("gpt-4o"),
           schema: z.object({
             explanation: z.string(),
             code: z.string(),
@@ -326,10 +349,10 @@ export const Orchestrator = createAgent(
           prompt: `Implement the changes for ${file.filePath} to support:
           ${file.purpose}
   
-          Consider the overall feature context:
+          Consider the overall feature ctx:
           ${props.featureRequest}`,
         });
-        toast("File change implemented");
+        ctx.toast("File change implemented");
         return {
           file,
           implementation: change,
@@ -337,7 +360,7 @@ export const Orchestrator = createAgent(
       })
     );
 
-    toast("File changes implemented");
+    ctx.toast("File changes implemented");
     return {
       plan: implementationPlan,
       changes: fileChanges,
@@ -350,9 +373,9 @@ export const Evaluator = createAgent(
   "Evaluator",
   async (
     props: { text: string; targetLanguage: string },
-    toast: (message: string) => void
+    ctx: { toast: (message: string) => void; openai: OpenAIProvider }
   ) => {
-    const model = openai("gpt-4o");
+    const model = ctx.openai("gpt-4o");
 
     let currentTranslation = "";
     let iterations = 0;
@@ -360,13 +383,13 @@ export const Evaluator = createAgent(
 
     // Initial translation
     const { text: translation } = await generateText({
-      model: openai("gpt-4o-mini"), // use small model for first attempt
+      model: ctx.openai("gpt-4o-mini"), // use small model for first attempt
       system: "You are an expert literary translator.",
       prompt: `Translate this text to ${props.targetLanguage}, preserving tone and cultural nuances:
       ${props.text}`,
     });
 
-    toast("Initial translation complete");
+    ctx.toast("Initial translation complete");
 
     currentTranslation = translation;
 
@@ -396,7 +419,7 @@ export const Evaluator = createAgent(
         4. Cultural accuracy`,
       });
 
-      toast(`Evaluation complete: ${evaluation.qualityScore}`);
+      ctx.toast(`Evaluation complete: ${evaluation.qualityScore}`);
 
       // Check if quality meets threshold
       if (
@@ -410,7 +433,7 @@ export const Evaluator = createAgent(
 
       // Generate improved translation based on feedback
       const { text: improvedTranslation } = await generateText({
-        model: openai("gpt-4o"), // use a larger model
+        model: ctx.openai("gpt-4o"), // use a larger model
         system: "You are an expert literary translator.",
         prompt: `Improve this translation based on the following feedback:
         ${evaluation.specificIssues.join("\n")}
@@ -420,13 +443,13 @@ export const Evaluator = createAgent(
         Current Translation: ${currentTranslation}`,
       });
 
-      toast("Improved translation complete");
+      ctx.toast("Improved translation complete");
 
       currentTranslation = improvedTranslation;
       iterations++;
     }
 
-    toast("Final translation complete");
+    ctx.toast("Final translation complete");
 
     return {
       finalTranslation: currentTranslation,
@@ -436,7 +459,7 @@ export const Evaluator = createAgent(
 );
 
 export default {
-  async fetch(request, env, ctx) {
+  async fetch(request, env, _ctx) {
     return (
       (await routePartykitRequest(request, env)) ||
       new Response("Not found", { status: 404 })
