@@ -2,7 +2,7 @@
   "name": "@cloudflare/agents-anthropic-patterns",
   "version": "0.0.0",
   "scripts": {
-    "build": "esbuild src/client.tsx --bundle --minify --outdir=public/dist --sourcemap --platform=browser --format=esm",
+    "build": "rm -rf dist && esbuild src/build.tsx --bundle --platform=node --outdir=dist && node dist/build.js && rm -rf dist && esbuild src/client.tsx --bundle --minify --outdir=public/dist --sourcemap --platform=browser --format=esm",
     "start": "wrangler dev",
     "deploy": "wrangler deploy"
   },

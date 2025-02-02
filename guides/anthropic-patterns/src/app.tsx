@@ -106,11 +106,11 @@ function ToastContainer({
 }
 
 function getOrCreateSessionId() {
-  const stored = localStorage.getItem("sessionId");
+  const stored = globalThis.localStorage?.getItem("sessionId");
   if (stored) return stored;
 
   const newId = crypto.randomUUID();
-  localStorage.setItem("sessionId", newId);
+  globalThis.localStorage?.setItem("sessionId", newId);
   return newId;
 }
 
