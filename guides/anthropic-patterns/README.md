@@ -62,7 +62,8 @@ Each pattern is implemented as a Durable Object, providing persistence, real-tim
    ```json
    "account_id": "your_account_id_here"
    "vars": {
-     "AI_GATEWAY_ACCOUNT_ID": "your_account_id_here"
+     "AI_GATEWAY_ACCOUNT_ID": "your_account_id_here",
+     "AI_GATEWAY_ID": "your_gateway_id_here"
    }
    ```
 

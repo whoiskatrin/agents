@@ -14,6 +14,7 @@ type Env = {
   OPENAI_API_KEY: string;
   AI_GATEWAY_TOKEN: string;
   AI_GATEWAY_ACCOUNT_ID: string;
+  AI_GATEWAY_ID: string;
   Sequential: DurableObjectNamespace<Server<Env>>;
   Routing: DurableObjectNamespace<Server<Env>>;
   Parallel: DurableObjectNamespace<Server<Env>>;
@@ -36,7 +37,7 @@ function createAgent(
   return class Agent extends Server<Env> {
     openai = createOpenAI({
       apiKey: this.env.OPENAI_API_KEY,
-      baseURL: `https://gateway.ai.cloudflare.com/v1/${this.env.AI_GATEWAY_ACCOUNT_ID}/anthropic-agent-patterns/openai`,
+      baseURL: `https://gateway.ai.cloudflare.com/v1/${this.env.AI_GATEWAY_ACCOUNT_ID}/${this.env.AI_GATEWAY_ID}/openai`,
       headers: {
         "cf-aig-authorization": `Bearer ${this.env.AI_GATEWAY_TOKEN}`,
       },
