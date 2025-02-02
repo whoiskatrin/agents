@@ -57,7 +57,7 @@ Each pattern is implemented as a Durable Object, providing persistence, real-tim
    AI_GATEWAY_TOKEN=your_key_here
    ```
 
-4. Edit wrangler.json to set your account ID:
+4. Edit wrangler.json to set your account ID and ai gateway ID details:
 
    ```json
    "account_id": "your_account_id_here"
