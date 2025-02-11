@@ -1,6 +1,5 @@
 import { useEffect, useState, useMemo } from "react";
 import { usePartySocket } from "partysocket/react";
-import "./app.css";
 
 import sequentialCode from "./flows/01 sequential.txt";
 import routingCode from "./flows/02 routing.txt";

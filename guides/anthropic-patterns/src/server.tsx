@@ -9,6 +9,9 @@ import {
 import { createOpenAI, OpenAIProvider } from "@ai-sdk/openai";
 import { generateText, generateObject } from "ai";
 import { z } from "zod";
+import { renderToString } from "react-dom/server";
+import { Layout } from "./layout";
+import App from "./app";
 
 type Env = {
   OPENAI_API_KEY: string;
@@ -459,8 +462,43 @@ export const Evaluator = createAgent(
   }
 );
 
+async function getCachedResponse(
+  request: Request,
+  or: () => Response | Promise<Response>
+) {
+  // @ts-ignore mixing browser and server types here
+  const cache: Cache = caches.default;
+  const response = await cache.match(request);
+  if (response) {
+    return response;
+  }
+  const newResponse = await or();
+  await cache.put(request, newResponse.clone());
+  return newResponse;
+}
+
 export default {
   async fetch(request, env, _ctx) {
+    // // bring thi back when we fix SSR https://github.com/cloudflare/workers-sdk/issues/8100
+    // const pathname = new URL(request.url).pathname;
+    // if (pathname === "/") {
+    //   return getCachedResponse(
+    //     request,
+    //     () =>
+    //       new Response(
+    //         renderToString(
+    //           <Layout>
+    //             <App />
+    //           </Layout>
+    //         ),
+    //         {
+    //           headers: {
+    //             "Content-Type": "text/html",
+    //           },
+    //         }
+    //       )
+    //   );
+    // }
     return (
       (await routePartykitRequest(request, env)) ||
       new Response("Not found", { status: 404 })
