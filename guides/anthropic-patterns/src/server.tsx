@@ -479,7 +479,7 @@ async function getCachedResponse(
 
 export default {
   async fetch(request, env, _ctx) {
-    // // bring thi back when we fix SSR https://github.com/cloudflare/workers-sdk/issues/8100
+    // // bring thi back when we figure out SSR
     // const pathname = new URL(request.url).pathname;
     // if (pathname === "/") {
     //   return getCachedResponse(

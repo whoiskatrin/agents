@@ -1,3 +1,5 @@
+import "./app.css";
+
 import { useEffect, useState, useMemo } from "react";
 import { usePartySocket } from "partysocket/react";
 
