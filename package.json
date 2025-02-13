@@ -1,6 +1,7 @@
 {
   "name": "@cloudflare/agents-repo",
   "description": "The monorepo for Cloudflare Agents and related work",
+  "type": "module",
   "keywords": [
     "cloudflare",
     "workers",
@@ -16,25 +17,30 @@
   "license": "MIT",
   "version": "0.0.0",
   "devDependencies": {
-    "@ai-sdk/openai": "^1.1.9",
-    "@cloudflare/vite-plugin": "^0.0.7",
+    "@ai-sdk/openai": "^1.1.10",
+    "@cloudflare/vite-plugin": "^0.0.8",
     "@cloudflare/workers-types": "^4.20250204.0",
-    "@types/node": "^22.13.1",
+    "@types/node": "^22.13.2",
     "@types/react": "^19.0.8",
     "@types/react-dom": "^19.0.3",
     "@vitejs/plugin-react": "^4.3.4",
-    "ai": "^4.1.34",
-    "partyserver": "^0.0.63",
+    "ai": "^4.1.36",
+    "partyserver": "^0.0.64",
     "partysocket": "^1.0.3",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "typescript": "^5.7.3",
     "vite": "^6.1.0",
     "workers-ai-provider": "^0.0.11",
-    "wrangler": "^3.108.0",
-    "zod": "^3.24.1"
+    "wrangler": "^3.108.1",
+    "zod": "^3.24.2"
   },
   "overrides": {
     "esbuild": "^0.25.0"
-  }
+  },
+  "workspaces": [
+    "examples/*",
+    "packages/*",
+    "guides/*"
+  ]
 }
