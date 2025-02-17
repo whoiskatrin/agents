@@ -4,6 +4,7 @@ async function main() {
   try {
     console.log("Getting current git hash...");
     const stdout = execSync(`git rev-parse --short HEAD`).toString();
+    console.log("Git hash:", stdout.trim());
 
     for (const path of [
       // just the one package for now
