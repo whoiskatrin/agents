@@ -1,7 +1,7 @@
 import "./app.css";
 
 import { useEffect, useState, useMemo } from "react";
-import { usePartySocket } from "partysocket/react";
+import { useAgent } from "@cloudflare/agents/react";
 
 import sequentialCode from "./flows/01 sequential.txt";
 import routingCode from "./flows/02 routing.txt";
@@ -127,7 +127,8 @@ function PatternSection({
   const [activeTab, setActiveTab] = useState<"diagram" | "code">("diagram");
   const [isCodeExpanded, setIsCodeExpanded] = useState(false);
 
-  const socket = usePartySocket({
+  const socket = useAgent({
+    prefix: "agents",
     party: type,
     room: sessionId,
     onMessage: (e) => {

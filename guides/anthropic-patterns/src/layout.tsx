@@ -1,3 +1,5 @@
+// let's use this again when we have SSR
+
 export function Layout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en">

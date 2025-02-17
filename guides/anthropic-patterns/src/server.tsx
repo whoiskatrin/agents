@@ -1,28 +1,26 @@
 // implementing https://www.anthropic.com/research/building-effective-agents
 
 import {
-  Server,
-  routePartykitRequest,
+  Agent,
+  AgentNamespace,
+  routeAgentRequest,
   Connection,
   WSMessage,
-} from "partyserver";
+} from "@cloudflare/agents";
 import { createOpenAI, OpenAIProvider } from "@ai-sdk/openai";
 import { generateText, generateObject } from "ai";
 import { z } from "zod";
-import { renderToString } from "react-dom/server";
-import { Layout } from "./layout";
-import App from "./app";
 
 type Env = {
   OPENAI_API_KEY: string;
   AI_GATEWAY_TOKEN: string;
   AI_GATEWAY_ACCOUNT_ID: string;
   AI_GATEWAY_ID: string;
-  Sequential: DurableObjectNamespace<Server<Env>>;
-  Routing: DurableObjectNamespace<Server<Env>>;
-  Parallel: DurableObjectNamespace<Server<Env>>;
-  Orchestrator: DurableObjectNamespace<Server<Env>>;
-  Evaluator: DurableObjectNamespace<Server<Env>>;
+  Sequential: AgentNamespace<Agent<Env>>;
+  Routing: AgentNamespace<Agent<Env>>;
+  Parallel: AgentNamespace<Agent<Env>>;
+  Orchestrator: AgentNamespace<Agent<Env>>;
+  Evaluator: AgentNamespace<Agent<Env>>;
 };
 
 // createAgent is a helper function to generate an agent class
@@ -37,7 +35,7 @@ function createAgent(
     }
   ) => Promise<any>
 ) {
-  return class Agent extends Server<Env> {
+  return class AnthropicAgent extends Agent<Env> {
     openai = createOpenAI({
       apiKey: this.env.OPENAI_API_KEY,
       baseURL: `https://gateway.ai.cloudflare.com/v1/${this.env.AI_GATEWAY_ACCOUNT_ID}/${this.env.AI_GATEWAY_ID}/openai`,
@@ -122,6 +120,7 @@ export const Sequential = createAgent(
     props: { input: string },
     ctx: { toast: (message: string) => void; openai: OpenAIProvider }
   ) => {
+    console.log("Sequential", props);
     // This agent uses a prompt chaining workflow, ideal for tasks that can be decomposed into fixed subtasks.
     // It trades off latency for higher accuracy by making each LLM call an easier task.
     const model = ctx.openai("gpt-4o");
@@ -500,7 +499,7 @@ export default {
     //   );
     // }
     return (
-      (await routePartykitRequest(request, env)) ||
+      (await routeAgentRequest(request, env)) ||
       new Response("Not found", { status: 404 })
     );
   },
