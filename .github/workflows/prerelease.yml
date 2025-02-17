@@ -21,10 +21,10 @@ jobs:
       - run: npm install
 
       - name: Modify package.json version
-        run: tsx .github/version-script.ts
+        run: npx tsx .github/version-script.ts
 
       - name: Resolve workspace dependencies
-        run: tsx .github/resolve-workspace-versions.ts
+        run: npx tsx .github/resolve-workspace-versions.ts
 
       - run: npm run build
       - run: npm run check

@@ -28,8 +28,8 @@ jobs:
       - id: changesets
         uses: changesets/action@v1
         with:
-          version: tsx .github/changeset-version.ts
-          publish: tsx .github/changeset-publish.ts
+          version: npx tsx .github/changeset-version.ts
+          publish: npx tsx .github/changeset-publish.ts
         env:
           GITHUB_TOKEN: ${{ secrets.AGENTS_GITHUB_TOKEN }}
           NPM_TOKEN: ${{ secrets.NPM_PUBLISH_TOKEN }}
