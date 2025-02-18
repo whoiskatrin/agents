@@ -10,7 +10,7 @@ This is an early-stage project. We're currently building out:
 
 - Example implementations
 - Documentation and guides
-- and maybe, a core agent framework
+- A core agent framework
 
 Stay tuned for updates!
 
