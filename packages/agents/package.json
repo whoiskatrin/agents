@@ -2,13 +2,27 @@
   "name": "@cloudflare/agents",
   "version": "0.0.0",
   "main": "src/index.ts",
+  "type": "module",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "build": "tsx ./scripts/build.ts"
   },
   "exports": {
-    ".": "./src/index.ts",
-    "./client": "./src/client.ts",
-    "./react": "./src/react.tsx"
+    ".": {
+      "types": "./dist/index.d.ts",
+      "require": "./dist/index.js",
+      "import": "./dist/index.js"
+    },
+    "./client": {
+      "types": "./dist/client.d.ts",
+      "require": "./dist/client.js",
+      "import": "./dist/client.js"
+    },
+    "./react": {
+      "types": "./dist/react.d.ts",
+      "require": "./dist/react.js",
+      "import": "./dist/react.js"
+    }
   },
   "keywords": [],
   "author": "",

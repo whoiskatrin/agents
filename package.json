@@ -12,7 +12,7 @@
   "author": "Sunil Pai <spai@cloudflare.com>",
   "private": true,
   "scripts": {
-    "build": "echo \"build\"",
+    "build": "npm run build -w @cloudflare/agents",
     "check": "tsc"
   },
   "license": "MIT",
@@ -33,6 +33,7 @@
     "partysocket": "0.0.0-548c226",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
+    "tsup": "^8.3.6",
     "tsx": "^4.19.2",
     "typescript": "^5.7.3",
     "vite": "^6.1.0",
