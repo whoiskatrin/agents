@@ -5,14 +5,20 @@ import {
   getServerByName,
 } from "partyserver";
 
-export * from "partyserver";
+export { Connection, WSMessage } from "partyserver";
+
+export { WorkflowEntrypoint } from "cloudflare:workers";
 
 export class Agent<Env> extends Server<Env> {
   static options = {
     hibernate: true, // default to hibernate
   };
+  sql() {
+    throw new Error("Not implemented");
+  }
   constructor(state: DurableObjectState, env: Env) {
     super(state, env);
+    this.sql;
   }
   onEmail(email: ForwardableEmailMessage) {
     throw new Error("Not implemented");
