@@ -254,6 +254,24 @@ header p {
   }
 }
 
+.stop-button {
+  background: #dc3545;
+  color: white;
+  border: none;
+  padding: 0.5rem 1rem;
+  border-radius: 4px;
+  cursor: pointer;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  transition: opacity 0.2s ease;
+}
+
+.stop-button:hover {
+  opacity: 0.9;
+}
+
 .workflow-output {
   background: var(--color-background);
   border: 1px solid var(--color-border);

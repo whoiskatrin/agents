@@ -81,6 +81,9 @@ function createAgent(
         case "run":
           this.run({ input: data.input });
           break;
+        case "stop":
+          this.setState({ ...this.state, isRunning: false });
+          break;
         default:
           console.error("Unknown message type", data.type);
       }

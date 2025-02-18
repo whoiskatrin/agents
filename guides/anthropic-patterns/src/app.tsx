@@ -3,11 +3,11 @@ import "./app.css";
 import { useEffect, useState, useMemo } from "react";
 import { useAgent } from "@cloudflare/agents/react";
 
-import sequentialCode from "./flows/01 sequential.txt";
-import routingCode from "./flows/02 routing.txt";
-import parallelCode from "./flows/03 parallel.txt";
-import orchestratorCode from "./flows/04 orchestrator.txt";
-import evaluatorCode from "./flows/05 evaluator.txt";
+import sequentialCode from "./flows/01 sequential.txt?raw";
+import routingCode from "./flows/02 routing.txt?raw";
+import parallelCode from "./flows/03 parallel.txt?raw";
+import orchestratorCode from "./flows/04 orchestrator.txt?raw";
+import evaluatorCode from "./flows/05 evaluator.txt?raw";
 
 type ToastType = "success" | "error" | "info";
 
@@ -450,6 +450,23 @@ function PatternSection({
                 "Run"
               )}
             </button>
+            {/* {workflowState.isRunning && (
+              <button
+                className="stop-button"
+                onClick={() => {
+                  socket.send(JSON.stringify({ type: "stop" }));
+                  const event = new CustomEvent("showToast", {
+                    detail: {
+                      type: "info",
+                      message: `Stopping ${title} workflow...`,
+                    },
+                  });
+                  window.dispatchEvent(event);
+                }}
+              >
+                Stop
+              </button>
+            )} */}
           </div>
           <pre className="workflow-output">
             {workflowState.output
@@ -578,7 +595,15 @@ export default function App() {
             >
               AI SDK
             </a>
-            , running in Cloudflare's Durable Objects.
+            , running on{" "}
+            <a
+              href="https://github.com/cloudflare/agents"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              Cloudflare Agents
+            </a>
+            .
           </p>
         </div>
       </header>
