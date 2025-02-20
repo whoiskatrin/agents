@@ -2,12 +2,16 @@
   "name": "@cloudflare/agents-playground",
   "private": true,
   "version": "0.0.0",
-  "main": "index.js",
+  "type": "module",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "start": "vite dev",
+    "deploy": "rm -rf dist && vite build && wrangler deploy"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
-  "description": ""
+  "description": "",
+  "dependencies": {
+    "cronstrue": "^2.54.0"
+  }
 }

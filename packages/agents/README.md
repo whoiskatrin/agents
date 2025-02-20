@@ -36,7 +36,7 @@ npm install @cloudflare/agents
 import { Agent } from "@cloudflare/agents";
 import openai from "openai";
 
-export class MyEmailAgent extends Agent<Env> {
+export class MyEmailAgent extends Agent {
   async onRequest(request) {
     // ... run your agentic workflow in here
     // use ai sdk, langchain, direct calls to openai, anthropic, etc.
@@ -120,13 +120,13 @@ Every agent can respond to http and websocket requests. You can use this to buil
 
 Cloudflare Agents can receive and send emails. After setting up your project to recieve emails ([instructions here](https://developers.cloudflare.com/email-routing/email-workers/enable-email-workers/)), you can route an email to your agent's `onEmail` method, run some code, and then optionally reply to the email.
 
-### scheduling (coming soon)
+### scheduling
 
 An `Agent` can schedule tasks to be run in the future by calling `this.schedule(when, callback, data)`, where `when` can be a delay, a Date, or a cron string; `callback` the function name to call, and `data` is an object of data to pass to the function.
 
 ```ts
 // schedule a task to run in 10 seconds
-this.schedule(Date.now() + 10000, "myTask", { message: "hello" });
+this.schedule(10, "myTask", { message: "hello" });
 
 // schedule a task to run at a specific date
 this.schedule(new Date("2025-01-01"), "myTask", { message: "hello" });
@@ -136,6 +136,9 @@ this.schedule("*/10 * * * *", "myTask", { message: "hello" });
 
 // schedule a task to run every 10 seconds, but only on mondays
 this.schedule("0 0 * * 1", "myTask", { message: "hello" });
+
+// cancel a scheduled task
+this.cancelSchedule(taskId);
 ```
 
 ### pause/resume

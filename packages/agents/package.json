@@ -29,8 +29,9 @@
   "license": "ISC",
   "description": "A home for your AI agents",
   "dependencies": {
+    "cron-schedule": "^5.0.4",
+    "nanoid": "^5.1.0",
     "partyserver": "^0.0.64",
     "partysocket": "0.0.0-548c226"
-  },
-  "devDependencies": {}
+  }
 }

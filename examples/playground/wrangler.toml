@@ -1,0 +1,14 @@
+name = "playground"
+main = "src/server.ts"
+compatibility_date = "2025-02-19"
+# compatibility_flags = ["nodejs_compat"]
+
+assets = { binding = "ASSETS" }
+
+[[durable_objects.bindings]]
+name = "Scheduler"
+class_name = "Scheduler"
+
+[[migrations]]
+tag = "v1"
+new_sqlite_classes = ["Scheduler"]

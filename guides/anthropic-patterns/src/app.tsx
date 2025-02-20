@@ -129,8 +129,8 @@ function PatternSection({
 
   const socket = useAgent({
     prefix: "agents",
-    party: type,
-    room: sessionId,
+    agent: type,
+    name: sessionId,
     onMessage: (e) => {
       const data = JSON.parse(e.data);
       switch (data.type) {
