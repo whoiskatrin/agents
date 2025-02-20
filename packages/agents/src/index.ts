@@ -8,9 +8,11 @@ import {
 import { parseCronExpression } from "cron-schedule";
 import { nanoid } from "nanoid";
 
-export { Connection, WSMessage } from "partyserver";
+export type { Connection, WSMessage } from "partyserver";
 
-export { WorkflowEntrypoint } from "cloudflare:workers";
+import { WorkflowEntrypoint as CFWorkflowEntrypoint } from "cloudflare:workers";
+
+export class WorkflowEntrypoint extends CFWorkflowEntrypoint {}
 
 export type Schedule = {
   id: string;
