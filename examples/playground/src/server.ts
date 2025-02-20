@@ -103,7 +103,6 @@ ${event.input}
         );
         return;
       }
-      // const scheduledItem = convertScheduleToScheduledItem(result.object);
       const schedule = await this.schedule(
         result.object.when.type === "scheduled"
           ? result.object.when.date
