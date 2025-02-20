@@ -76,20 +76,19 @@ function App() {
     e.preventDefault();
     if (!input.trim()) return;
 
-    // const newItem: ScheduledItem = {
-    //   id: crypto.randomUUID(),
-    //   trigger: "in 5 seconds",
-    //   nextTrigger: new Date(Date.now() + 5000),
-    //   description: input.trim(),
-    // };
-
     agent.send(
       JSON.stringify({
         type: "schedule",
         input: input,
       } satisfies IncomingMessage)
     );
-
+    // TODO: optimistic update
+    // const newItem: ScheduledItem = {
+    //   id: crypto.randomUUID(),
+    //   trigger: "in 5 seconds",
+    //   nextTrigger: new Date(Date.now() + 5000),
+    //   description: input.trim(),
+    // };
     // setScheduledItems([...scheduledItems, newItem]);
     setInput("");
     // addToast("Task scheduled successfully");
