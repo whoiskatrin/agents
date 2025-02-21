@@ -1,6 +1,6 @@
 import { usePartySocket } from "partysocket/react";
 
-type UseAgentOptions = Omit<
+export type UseAgentOptions = Omit<
   Parameters<typeof usePartySocket>[0],
   "party" | "room"
 > & {

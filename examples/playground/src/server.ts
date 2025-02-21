@@ -1,13 +1,13 @@
 import {
   Agent,
-  Connection,
+  type Connection,
   routeAgentRequest,
-  Schedule,
+  type Schedule,
 } from "@cloudflare/agents";
 
 import * as z from "zod";
 
-import { ConnectionContext } from "partyserver";
+import type { ConnectionContext } from "partyserver";
 
 import type { IncomingMessage, OutgoingMessage, ScheduledItem } from "./shared";
 import { createOpenAI } from "@ai-sdk/openai";

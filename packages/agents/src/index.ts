@@ -1,14 +1,14 @@
 import {
   Server,
   routePartykitRequest,
-  PartyServerOptions,
+  type PartyServerOptions,
   getServerByName,
 } from "partyserver";
 
 import { parseCronExpression } from "cron-schedule";
 import { nanoid } from "nanoid";
 
-export type { Connection, WSMessage } from "partyserver";
+export type { Connection, WSMessage, ConnectionContext } from "partyserver";
 
 import { WorkflowEntrypoint as CFWorkflowEntrypoint } from "cloudflare:workers";
 
@@ -286,13 +286,11 @@ export function routeAgentRequest<Env extends Record<string, unknown>>(
   });
 }
 
-export function routeAgentEmail<Env extends Record<string, unknown>>(
+export async function routeAgentEmail<Env extends Record<string, unknown>>(
   email: ForwardableEmailMessage,
   env: Env,
   options?: PartyServerOptions<Env>
-) {
-  throw new Error("Not implemented");
-}
+): Promise<void> {}
 
 export function getAgentByName<
   Env extends Record<string, unknown>,

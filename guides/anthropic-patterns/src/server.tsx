@@ -2,12 +2,12 @@
 
 import {
   Agent,
-  AgentNamespace,
+  type AgentNamespace,
   routeAgentRequest,
-  Connection,
-  WSMessage,
+  type Connection,
+  type WSMessage,
 } from "@cloudflare/agents";
-import { createOpenAI, OpenAIProvider } from "@ai-sdk/openai";
+import { createOpenAI, type OpenAIProvider } from "@ai-sdk/openai";
 import { generateText, generateObject } from "ai";
 import { z } from "zod";
 
