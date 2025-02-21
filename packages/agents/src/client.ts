@@ -18,6 +18,11 @@ export type AgentClientFetchOptions = Omit<
 };
 
 export class AgentClient extends PartySocket {
+  static fetch(opts: PartyFetchOptions): Promise<Response> {
+    throw new Error(
+      "AgentClient.fetch is not implemented, use agentFetch instead"
+    );
+  }
   constructor(opts: AgentClientOptions) {
     super({
       prefix: "agents",
@@ -28,12 +33,11 @@ export class AgentClient extends PartySocket {
   }
 }
 
-// @ts-ignore I don't know typescript
-AgentClient.fetch = (opts: AgentClientFetchOptions) => {
+export function agentFetch(opts: AgentClientFetchOptions) {
   return PartySocket.fetch({
     prefix: "agents",
     party: opts.agent,
     room: opts.name || "default",
     ...opts,
   });
-};
+}
