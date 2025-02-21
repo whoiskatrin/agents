@@ -145,7 +145,7 @@ export class Agent<
           );
         }
         _onConnect(connection, ctx);
-      }, 0);
+      }, 20);
     };
   }
 
