@@ -3,6 +3,9 @@ import {
   routePartykitRequest,
   type PartyServerOptions,
   getServerByName,
+  type Connection,
+  type ConnectionContext,
+  type WSMessage,
 } from "partyserver";
 
 import { parseCronExpression } from "cron-schedule";
@@ -40,7 +43,15 @@ function getNextCronTime(cron: string) {
   return interval.getNextDate();
 }
 
-export class Agent<Env = Record<string, unknown>> extends Server<Env> {
+const STATE_ROW_ID = "cf_state_row_id";
+
+export class Agent<
+  Env = Record<string, unknown>,
+  State = unknown
+> extends Server<Env> {
+  #state = undefined as State | undefined;
+  state: State | undefined;
+
   static options = {
     hibernate: true, // default to hibernate
   };
@@ -59,11 +70,37 @@ export class Agent<Env = Record<string, unknown>> extends Server<Env> {
   }
   constructor(state: DurableObjectState, env: Env) {
     super(state, env);
+
+    this.sql`
+      CREATE TABLE IF NOT EXISTS cf_agents_state (
+        id TEXT PRIMARY KEY NOT NULL,
+        state TEXT
+      )
+    `;
+    const _this = this;
+    Object.defineProperty(this, "state", {
+      get() {
+        if (!_this.#state) {
+          const result = _this.sql<{ state: State | undefined }>`
+      SELECT state FROM cf_agents_state WHERE id = ${STATE_ROW_ID}
+    `;
+          const state = result[0]?.state as string;
+          if (!state) return undefined;
+          _this.#state = JSON.parse(state);
+          return _this.#state;
+        }
+        return _this.#state;
+      },
+      set(value: State | undefined) {
+        throw new Error("State is read-only, use this.setState instead");
+      },
+    });
+
     void this.ctx.blockConcurrencyWhile(async () => {
       try {
         // Create alarms table if it doesn't exist
         this.sql`
-        CREATE TABLE IF NOT EXISTS schedules (
+        CREATE TABLE IF NOT EXISTS cf_agents_schedules (
           id TEXT PRIMARY KEY NOT NULL DEFAULT (randomblob(9)),
           callback TEXT,
           payload TEXT,
@@ -82,7 +119,66 @@ export class Agent<Env = Record<string, unknown>> extends Server<Env> {
         throw e;
       }
     });
+
+    const _onMessage = this.onMessage.bind(this);
+    this.onMessage = (connection: Connection, message: WSMessage) => {
+      if (
+        typeof message === "string" &&
+        message.startsWith("cf_agent_state:")
+      ) {
+        const parsed = JSON.parse(message.slice(15));
+        this.setState(parsed.state, connection);
+        return;
+      }
+      _onMessage(connection, message);
+    };
+
+    const _onConnect = this.onConnect.bind(this);
+    this.onConnect = (connection: Connection, ctx: ConnectionContext) => {
+      // TODO: This is a hack to ensure the state is sent after the connection is established
+      // must fix this
+      setTimeout(() => {
+        if (this.state) {
+          connection.send(
+            `cf_agent_state:` +
+              JSON.stringify({ type: "cf_agent_state", state: this.state })
+          );
+        }
+        _onConnect(connection, ctx);
+      }, 0);
+    };
   }
+
+  setState(state: State, source: Connection | "server" = "server") {
+    this.#state = state;
+    this.sql`
+    INSERT OR REPLACE INTO cf_agents_state (id, state)
+    VALUES (${STATE_ROW_ID}, ${JSON.stringify(state)})
+  `;
+    this.broadcast(
+      `cf_agent_state:` +
+        JSON.stringify({
+          type: "cf_agent_state",
+          state: state,
+        }),
+      source !== "server" ? [source.id] : []
+    );
+    this.onStateUpdate(state, source);
+  }
+
+  #warnedToImplementOnStateUpdate = false;
+  onStateUpdate(state: State | undefined, source: Connection | "server") {
+    if (!this.#warnedToImplementOnStateUpdate) {
+      console.log(
+        "state updated, implement onStateUpdate in your agent to handle this change"
+      );
+      this.#warnedToImplementOnStateUpdate = true;
+    }
+  }
+
+  // onMessage(connection: Connection, message: WSMessage) {}
+
+  // onConnect(connection: Connection, ctx: ConnectionContext) {}
 
   onEmail(email: ForwardableEmailMessage) {
     throw new Error("Not implemented");
@@ -101,7 +197,7 @@ export class Agent<Env = Record<string, unknown>> extends Server<Env> {
     if (when instanceof Date) {
       const timestamp = Math.floor(when.getTime() / 1000);
       this.sql`
-        INSERT OR REPLACE INTO schedules (id, callback, payload, type, time)
+        INSERT OR REPLACE INTO cf_agents_schedules (id, callback, payload, type, time)
         VALUES (${id}, ${callback}, ${JSON.stringify(
         payload
       )}, 'scheduled', ${timestamp})
@@ -121,7 +217,7 @@ export class Agent<Env = Record<string, unknown>> extends Server<Env> {
       const timestamp = Math.floor(time.getTime() / 1000);
 
       this.sql`
-        INSERT OR REPLACE INTO schedules (id, callback, payload, type, delayInSeconds, time)
+        INSERT OR REPLACE INTO cf_agents_schedules (id, callback, payload, type, delayInSeconds, time)
         VALUES (${id}, ${callback}, ${JSON.stringify(
         payload
       )}, 'delayed', ${when}, ${timestamp})
@@ -142,7 +238,7 @@ export class Agent<Env = Record<string, unknown>> extends Server<Env> {
       const timestamp = Math.floor(nextExecutionTime.getTime() / 1000);
 
       this.sql`
-        INSERT OR REPLACE INTO schedules (id, callback, payload, type, cron, time)
+        INSERT OR REPLACE INTO cf_agents_schedules (id, callback, payload, type, cron, time)
         VALUES (${id}, ${callback}, ${JSON.stringify(
         payload
       )}, 'cron', ${when}, ${timestamp})
@@ -164,7 +260,7 @@ export class Agent<Env = Record<string, unknown>> extends Server<Env> {
   }
   async getSchedule(id: string): Promise<Schedule | undefined> {
     const result = this.sql<Schedule>`
-      SELECT * FROM schedules WHERE id = ${id}
+      SELECT * FROM cf_agents_schedules WHERE id = ${id}
     `;
     if (!result) return undefined;
 
@@ -178,7 +274,7 @@ export class Agent<Env = Record<string, unknown>> extends Server<Env> {
       timeRange?: { start?: Date; end?: Date };
     } = {}
   ): Schedule[] {
-    let query = "SELECT * FROM schedules WHERE 1=1";
+    let query = "SELECT * FROM cf_agents_schedules WHERE 1=1";
     const params = [];
 
     if (criteria.id) {
@@ -214,7 +310,7 @@ export class Agent<Env = Record<string, unknown>> extends Server<Env> {
   }
 
   async cancelSchedule(id: string): Promise<boolean> {
-    this.sql`DELETE FROM schedules WHERE id = ${id}`;
+    this.sql`DELETE FROM cf_agents_schedules WHERE id = ${id}`;
 
     await this.scheduleNextAlarm();
     return true;
@@ -223,7 +319,7 @@ export class Agent<Env = Record<string, unknown>> extends Server<Env> {
   private async scheduleNextAlarm() {
     // Find the next schedule that needs to be executed
     const result = this.sql`
-      SELECT time FROM schedules 
+      SELECT time FROM cf_agents_schedules 
       WHERE time > ${Math.floor(Date.now() / 1000)}
       ORDER BY time ASC 
       LIMIT 1
@@ -241,7 +337,7 @@ export class Agent<Env = Record<string, unknown>> extends Server<Env> {
 
     // Get all schedules that should be executed now
     const result = this.sql<Schedule>`
-      SELECT * FROM schedules WHERE time <= ${now}
+      SELECT * FROM cf_agents_schedules WHERE time <= ${now}
     `;
 
     for (const row of result || []) {
@@ -257,18 +353,28 @@ export class Agent<Env = Record<string, unknown>> extends Server<Env> {
         const nextTimestamp = Math.floor(nextExecutionTime.getTime() / 1000);
 
         this.sql`
-          UPDATE schedules SET time = ${nextTimestamp} WHERE id = ${row.id}
+          UPDATE cf_agents_schedules SET time = ${nextTimestamp} WHERE id = ${row.id}
         `;
       } else {
         // Delete one-time schedules after execution
         this.sql`
-          DELETE FROM schedules WHERE id = ${row.id}
+          DELETE FROM cf_agents_schedules WHERE id = ${row.id}
         `;
       }
     }
 
     // Schedule the next alarm
     await this.scheduleNextAlarm();
+  }
+
+  async destroy() {
+    // drop all tables
+    this.sql`DROP TABLE IF EXISTS cf_agents_state`;
+    this.sql`DROP TABLE IF EXISTS cf_agents_schedules`;
+
+    // delete all alarms
+    await this.ctx.storage.deleteAlarm();
+    await this.ctx.storage.deleteAll();
   }
 }
 

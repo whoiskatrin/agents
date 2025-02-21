@@ -1,6 +1,7 @@
 import {
   Agent,
   type Connection,
+  routeAgentEmail,
   routeAgentRequest,
   type Schedule,
 } from "@cloudflare/agents";
@@ -94,7 +95,8 @@ Here is the string:
 ${event.input}
 `,
       });
-      if (result.object.when.type === "no-schedule") {
+      const { when, description } = result.object;
+      if (when.type === "no-schedule") {
         connection.send(
           JSON.stringify({
             type: "error",
@@ -104,13 +106,13 @@ ${event.input}
         return;
       }
       const schedule = await this.schedule(
-        result.object.when.type === "scheduled"
-          ? result.object.when.date
-          : result.object.when.type === "delayed"
-          ? result.object.when.delayInSeconds
-          : result.object.when.cron,
+        when.type === "scheduled"
+          ? when.date
+          : when.type === "delayed"
+          ? when.delayInSeconds
+          : when.cron,
         "onTask",
-        result.object.description
+        description
       );
 
       connection.send(
@@ -134,11 +136,22 @@ ${event.input}
   }
 }
 
+export class State extends Agent<Env> {}
+
+export class EmailAgent extends Agent<Env> {
+  async onEmail(email: ForwardableEmailMessage) {
+    console.log(email);
+  }
+}
+
 export default {
   async fetch(request: Request, env: Env, ctx: ExecutionContext) {
     return (
       (await routeAgentRequest(request, env)) ||
       new Response("Not found", { status: 404 })
     );
+  },
+  async email(email: ForwardableEmailMessage, env: Env, ctx: ExecutionContext) {
+    await routeAgentEmail(email, env);
   },
 } satisfies ExportedHandler<Env>;
