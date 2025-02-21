@@ -4,30 +4,36 @@ import {
   type PartyFetchOptions,
 } from "partysocket";
 
-export type AgentClientOptions = Omit<PartySocketOptions, "prefix" | "room"> & {
-  room?: string;
+export type AgentClientOptions = Omit<PartySocketOptions, "party" | "room"> & {
+  agent: string;
+  name?: string;
 };
 
 export type AgentClientFetchOptions = Omit<
   PartyFetchOptions,
-  "prefix" | "room"
+  "party" | "room"
 > & {
-  room?: string;
+  agent: string;
+  name?: string;
 };
 
 export class AgentClient extends PartySocket {
-  static fetch(opts: AgentClientFetchOptions) {
-    return PartySocket.fetch({
-      prefix: "agents",
-      room: "default",
-      ...opts,
-    });
-  }
   constructor(opts: AgentClientOptions) {
     super({
       prefix: "agents",
-      room: "default",
+      party: opts.agent,
+      room: opts.name || "default",
       ...opts,
     });
   }
 }
+
+// @ts-ignore I don't know typescript
+AgentClient.fetch = (opts: AgentClientFetchOptions) => {
+  return PartySocket.fetch({
+    prefix: "agents",
+    party: opts.agent,
+    room: opts.name || "default",
+    ...opts,
+  });
+};
