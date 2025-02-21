@@ -33,11 +33,14 @@ export class AgentClient extends PartySocket {
   }
 }
 
-export function agentFetch(opts: AgentClientFetchOptions) {
-  return PartySocket.fetch({
-    prefix: "agents",
-    party: opts.agent,
-    room: opts.name || "default",
-    ...opts,
-  });
+export function agentFetch(opts: AgentClientFetchOptions, init?: RequestInit) {
+  return PartySocket.fetch(
+    {
+      prefix: "agents",
+      party: opts.agent,
+      room: opts.name || "default",
+      ...opts,
+    },
+    init
+  );
 }
