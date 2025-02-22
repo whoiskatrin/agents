@@ -10,9 +10,9 @@ name = "Scheduler"
 class_name = "Scheduler"  
 
 [[durable_objects.bindings]]
-name = "State"
-class_name = "State"
+name = "Stateful"
+class_name = "Stateful"
 
 [[migrations]]
 tag = "v1"
-new_sqlite_classes = ["Scheduler", "State"]
+new_sqlite_classes = ["Scheduler", "Stateful"]

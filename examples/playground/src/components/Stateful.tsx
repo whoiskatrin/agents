@@ -19,7 +19,7 @@ export function Stateful({ addToast }: StateProps) {
   });
 
   const agent = useAgent<State>({
-    agent: "state",
+    agent: "stateful",
     onStateUpdate: (state, source: "server" | "client") => {
       setSyncedState(state);
     },
@@ -27,19 +27,16 @@ export function Stateful({ addToast }: StateProps) {
 
   const handleIncrement = () => {
     const newCounter = syncedState.counter + 1;
-    setSyncedState((state) => ({ ...state, counter: newCounter }));
     agent.setState({ ...syncedState, counter: newCounter });
   };
 
   const handleDecrement = () => {
     const newCounter = syncedState.counter - 1;
-    setSyncedState((state) => ({ ...state, counter: newCounter }));
     agent.setState({ ...syncedState, counter: newCounter });
   };
 
   const handleTextChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const newText = e.target.value;
-    setSyncedState((state) => ({ ...state, text: newText }));
     agent.setState({ ...syncedState, text: newText });
   };
 
