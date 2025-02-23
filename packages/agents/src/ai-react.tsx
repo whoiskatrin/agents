@@ -2,6 +2,7 @@ import { useChat } from "@ai-sdk/react";
 import type { Message } from "ai";
 import { useAgent } from "./react";
 import { useEffect, use } from "react";
+import type { OutgoingMessage } from "./ai-types";
 type UseAgentChatOptions = Omit<
   Parameters<typeof useChat>[0] & {
     agent: ReturnType<typeof useAgent>;
@@ -62,12 +63,14 @@ export function useAgentChat(options: UseAgentChatOptions) {
     agent.addEventListener(
       "message",
       (event) => {
-        const data = JSON.parse(event.data);
-        if (data.type === "cf_agent_use_chat_response" && data.id === id) {
-          controller.enqueue(new TextEncoder().encode(data.body));
-          if (data.done) {
-            controller.close();
-            abortController.abort();
+        const data = JSON.parse(event.data) as OutgoingMessage;
+        if (data.type === "cf_agent_use_chat_response") {
+          if (data.id === id) {
+            controller.enqueue(new TextEncoder().encode(data.body));
+            if (data.done) {
+              controller.close();
+              abortController.abort();
+            }
           }
         }
       },
@@ -122,14 +125,14 @@ export function useAgentChat(options: UseAgentChatOptions) {
     );
 
     function onClearHistory(event: MessageEvent) {
-      const data = JSON.parse(event.data);
+      const data = JSON.parse(event.data) as OutgoingMessage;
       if (data.type === "cf_agent_chat_clear") {
         useChatHelpers.setMessages([]);
       }
     }
 
     function onMessages(event: MessageEvent) {
-      const data = JSON.parse(event.data);
+      const data = JSON.parse(event.data) as OutgoingMessage;
       if (data.type === "cf_agent_chat_messages") {
         useChatHelpers.setMessages(data.messages);
       }
