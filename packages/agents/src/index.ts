@@ -404,10 +404,7 @@ export async function routeAgentEmail<Env extends Record<string, unknown>>(
   options?: PartyServerOptions<Env>
 ): Promise<void> {}
 
-export function getAgentByName<
-  Env extends Record<string, unknown>,
-  T extends Agent<Env>
->(
+export function getAgentByName<Env, T extends Agent<Env>>(
   namespace: AgentNamespace<T>,
   name: string,
   options?: {

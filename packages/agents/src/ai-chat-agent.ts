@@ -1,6 +1,7 @@
 import { Agent, type Connection, type WSMessage } from "./";
 import type { Message as ChatMessage, StreamTextOnFinishCallback } from "ai";
-import { streamText, appendResponseMessages } from "ai";
+import { appendResponseMessages } from "ai";
+import type { OutgoingMessage, IncomingMessage } from "./ai-types";
 const decoder = new TextDecoder();
 
 export class AIChatAgent<Env = unknown> extends Agent<Env> {
@@ -19,16 +20,17 @@ export class AIChatAgent<Env = unknown> extends Agent<Env> {
     });
   }
 
-  onConnect(connection: Connection) {
-    connection.setState({
-      ...connection.state,
-      isChatConnection: true,
-    });
+  private sendChatMessage(connection: Connection, message: OutgoingMessage) {
+    connection.send(JSON.stringify(message));
+  }
+
+  private broadcastChatMessage(message: OutgoingMessage, exclude?: string[]) {
+    this.broadcast(JSON.stringify(message), exclude);
   }
 
   override async onMessage(connection: Connection, message: WSMessage) {
     if (typeof message === "string") {
-      const data = JSON.parse(message);
+      const data = JSON.parse(message) as IncomingMessage;
       if (data.type == "cf_agent_chat_init") {
         connection.setState({
           ...connection.state,
@@ -53,12 +55,12 @@ export class AIChatAgent<Env = unknown> extends Agent<Env> {
           // dispatcher,
           // duplex
         } = data.init;
-        const { messages } = JSON.parse(body);
-        this.broadcast(
-          JSON.stringify({
+        const { messages } = JSON.parse(body as string);
+        this.broadcastChatMessage(
+          {
             type: "cf_agent_chat_messages",
             messages,
-          }),
+          },
           [connection.id]
         );
         const message: ChatMessage = messages[messages.length - 1]; // TODO: we'll only send the last message, but we use this anyway
@@ -86,11 +88,11 @@ export class AIChatAgent<Env = unknown> extends Agent<Env> {
                 message.id
               },${JSON.stringify(message)})`;
             });
-            this.broadcast(
-              JSON.stringify({
+            this.broadcastChatMessage(
+              {
                 type: "cf_agent_chat_messages",
                 messages: finalMessages,
-              }),
+              },
               [connection.id]
             );
           }
@@ -100,10 +102,10 @@ export class AIChatAgent<Env = unknown> extends Agent<Env> {
         }
       } else if (data.type === "cf_agent_chat_clear") {
         this.sql`delete from cf_ai_chat_agent_messages`;
-        this.broadcast(
-          JSON.stringify({
+        this.broadcastChatMessage(
+          {
             type: "cf_agent_chat_clear",
-          }),
+          },
           [connection.id]
         );
       } else if (data.type === "cf_agent_chat_messages") {
@@ -115,18 +117,18 @@ export class AIChatAgent<Env = unknown> extends Agent<Env> {
             message.id
           },${JSON.stringify(message)})`;
         });
-        this.broadcast(
-          JSON.stringify({
+        this.broadcastChatMessage(
+          {
             type: "cf_agent_chat_messages",
             messages: data.messages,
-          }),
+          },
           [connection.id]
         );
       }
     }
   }
 
-  async onRequest(request: Request): Promise<Response> {
+  override async onRequest(request: Request): Promise<Response> {
     if (request.url.endsWith("/get-messages")) {
       const messages = (
         this.sql`select * from cf_ai_chat_agent_messages` || []
@@ -160,26 +162,22 @@ export class AIChatAgent<Env = unknown> extends Agent<Env> {
       const body = decoder.decode(chunk);
 
       chatConnections.forEach((conn) => {
-        conn.send(
-          JSON.stringify({
-            id,
-            type: "cf_agent_use_chat_response",
-            body,
-            done: false,
-          })
-        );
+        this.sendChatMessage(conn, {
+          id,
+          type: "cf_agent_use_chat_response",
+          body,
+          done: false,
+        });
       });
     }
 
     chatConnections.forEach((conn) => {
-      conn.send(
-        JSON.stringify({
-          id,
-          type: "cf_agent_use_chat_response",
-          body: null,
-          done: true,
-        })
-      );
+      this.sendChatMessage(conn, {
+        id,
+        type: "cf_agent_use_chat_response",
+        body: "",
+        done: true,
+      });
     });
   }
 }
