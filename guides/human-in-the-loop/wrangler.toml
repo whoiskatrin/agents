@@ -3,3 +3,12 @@ main = "./src/server.ts"
 compatibility_date = "2025-02-21"
 
 assets = {}
+
+
+[[durable_objects.bindings]]
+name  = "HumanInTheLoop"
+class_name = "HumanInTheLoop"
+
+[[migrations]]
+tag = "v1"
+new_sqlite_classes = ["HumanInTheLoop"]

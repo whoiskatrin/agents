@@ -7,7 +7,7 @@ async function main() {
     splitting: true,
     sourcemap: true,
     clean: true,
-    external: ["cloudflare:workers"],
+    external: ["cloudflare:workers", "@ai-sdk/react", "ai", "react"],
     format: "esm",
     dts: true,
   });

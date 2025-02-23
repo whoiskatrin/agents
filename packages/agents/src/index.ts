@@ -59,14 +59,20 @@ export class Agent<
     strings: TemplateStringsArray,
     ...values: any[]
   ) {
-    // Construct the SQL query with placeholders
-    const query = strings.reduce(
-      (acc, str, i) => acc + str + (i < values.length ? "?" : ""),
-      ""
-    );
+    let query = "";
+    try {
+      // Construct the SQL query with placeholders
+      query = strings.reduce(
+        (acc, str, i) => acc + str + (i < values.length ? "?" : ""),
+        ""
+      );
 
-    // Execute the SQL query with the provided values
-    return [...this.ctx.storage.sql.exec(query, ...values)] as T[];
+      // Execute the SQL query with the provided values
+      return [...this.ctx.storage.sql.exec(query, ...values)] as T[];
+    } catch (e) {
+      console.error(`failed to execute sql query: ${query}`, e);
+      throw e;
+    }
   }
   constructor(state: DurableObjectState, env: Env) {
     super(state, env);

@@ -7,6 +7,10 @@
     "test": "echo \"Error: no test specified\" && exit 1",
     "build": "tsx ./scripts/build.ts"
   },
+  "files": [
+    "dist",
+    "README.md"
+  ],
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
@@ -22,6 +26,16 @@
       "types": "./dist/react.d.ts",
       "require": "./dist/react.js",
       "import": "./dist/react.js"
+    },
+    "./ai-react": {
+      "types": "./dist/ai-react.d.ts",
+      "require": "./dist/ai-react.js",
+      "import": "./dist/ai-react.js"
+    },
+    "./ai-chat-agent": {
+      "types": "./dist/ai-chat-agent.d.ts",
+      "require": "./dist/ai-chat-agent.js",
+      "import": "./dist/ai-chat-agent.js"
     }
   },
   "keywords": [],

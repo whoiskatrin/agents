@@ -48,16 +48,79 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }
 
-/* Theme toggle */
-.theme-toggle {
+/* Controls container */
+.controls-container {
   position: fixed;
   top: 1rem;
   right: 1rem;
+  display: flex;
+  gap: 0.75rem;
+  z-index: 10;
+  align-items: center;
+}
+
+/* Theme switch */
+.theme-switch {
+  position: relative;
+  width: 3.5rem;
+  height: 1.75rem;
+  background: var(--input-bg);
+  border-radius: 1rem;
+  border: 1px solid var(--border);
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  padding: 0.25rem;
+}
+
+.theme-switch::before {
+  content: "🌙";
+  position: absolute;
+  left: 0.25rem;
+  font-size: 1rem;
+  line-height: 1;
+  transition: opacity 0.3s ease;
+  opacity: 0;
+}
+
+.theme-switch::after {
+  content: "🌞";
+  position: absolute;
+  right: 0.25rem;
+  font-size: 1rem;
+  line-height: 1;
+  transition: opacity 0.3s ease;
+  opacity: 0;
+}
+
+.theme-switch[data-theme="dark"]::before {
+  opacity: 1;
+}
+
+.theme-switch[data-theme="light"]::after {
+  opacity: 1;
+}
+
+.theme-switch-handle {
+  width: 1.25rem;
+  height: 1.25rem;
+  background: var(--text);
+  border-radius: 50%;
+  transition: transform 0.3s ease;
+}
+
+.theme-switch[data-theme="light"] .theme-switch-handle {
+  transform: translateX(1.75rem);
+}
+
+/* Clear history button */
+.clear-history {
   padding: 0.5rem;
   border-radius: 0.5rem;
   background: var(--input-bg);
-  border: 1px solid var(--border);
-  color: var(--text);
+  border: 1px solid var(--button-danger);
+  color: var(--button-danger);
   cursor: pointer;
   display: flex;
   align-items: center;
@@ -67,8 +130,9 @@ body {
   transition: all 0.2s ease;
 }
 
-.theme-toggle:hover {
-  background: var(--code-bg);
+.clear-history:hover {
+  color: white;
+  background: var(--button-danger);
 }
 
 /* Chat container */
@@ -77,8 +141,38 @@ body {
   flex-direction: column;
   width: 100%;
   max-width: 28rem;
-  margin: 6rem auto;
+  height: calc(100vh - 8rem); /* Leave space for top margin and input */
+  margin: 4rem auto 0;
   padding: 0 1rem;
+  overflow-y: auto;
+  position: relative;
+  scrollbar-width: thin;
+  scrollbar-color: var(--secondary-text) var(--input-bg);
+}
+
+/* Webkit scrollbar styles */
+.chat-container::-webkit-scrollbar {
+  width: 8px;
+}
+
+.chat-container::-webkit-scrollbar-track {
+  background: var(--input-bg);
+  border-radius: 4px;
+}
+
+.chat-container::-webkit-scrollbar-thumb {
+  background: var(--secondary-text);
+  border-radius: 4px;
+}
+
+.chat-container::-webkit-scrollbar-thumb:hover {
+  background: var(--text);
+}
+
+/* Messages wrapper to ensure proper spacing */
+.messages-wrapper {
+  flex: 1;
+  padding-bottom: 5rem; /* Space for input */
 }
 
 /* Message styles */
