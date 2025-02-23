@@ -65,7 +65,9 @@ import { OpenAI } from "openai";
 export class AIAgent extends Agent {
   async onRequest(request) {
     // Connect with AI capabilities
-    const ai = new OpenAI();
+    const ai = new OpenAI({
+      apiKey: this.env.OPENAI_API_KEY,
+    });
 
     // Process and understand
     const response = await ai.chat.completions.create({
@@ -97,7 +99,14 @@ Define your agent's domain:
         "class_name": "AIAgent"
       }
     ]
-  }
+  },
+  "migrations": [
+    {
+      "tag": "v1",
+      // Mandatory for the Agent to store state
+      "new_sqlite_classes": ["AIAgent"]
+    }
+  ]
 }
 ```
 
