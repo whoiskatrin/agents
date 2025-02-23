@@ -55,7 +55,7 @@ For comprehensive documentation and guides:
 
 - [Core Framework](packages/agents/README.md)
 - [The Anthropic Patterns for building effective agents](guides/anthropic-patterns/README.md)
-- [Human in the Loop](guides/humans-in-the-loop/README.md)
+- [Human in the Loop](guides/human-in-the-loop/README.md)
 - [Playground](examples/playground/README.md)
 
 ## Contributing

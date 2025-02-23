@@ -10,7 +10,6 @@ The implementation showcases:
 - Real-time communication between agents and humans using WebSocket connections
 - Persistent state management across agent lifecycles
 - Tool-based architecture for extensible agent capabilities
-- Modern UI with dark mode support and accessibility features
 
 ### Key Components
 
@@ -97,34 +96,34 @@ function Chat() {
 - **Real-time Updates**: WebSocket connections ensure immediate updates for approval requests
 - **Tool Registry**: Flexible tool system with configurable approval requirements
 - **Type Safety**: Full TypeScript support for tool definitions and parameters
-- **Modern UI**:
-  - Dark/Light mode with smooth transitions
-  - Accessible theme toggle switch
-  - Auto-scrolling chat interface
-  - Custom scrollbar styling
-  - Responsive design
-  - Clear history functionality
 
 ### Getting Started
 
-1. Configure your `wrangler.toml`:
+1. Install dependencies:
+
+```bash
+npm install
+```
+
+2. Configure your `wrangler.toml`:
 
 ```toml
-[[durable_objects]]
+[[durable_objects.bindings]]
 binding = "HumanInTheLoopAgent"
 class_name = "HumanInTheLoopAgent"
 
-[env.production]
-OPENAI_API_KEY = "your-api-key"
+[[migrations]]
+tag = "v1"
+new_sqlite_classes = ["HumanInTheLoopAgent"]
 ```
 
-2. Deploy your agent:
+3. Deploy your agent:
 
 ```bash
 wrangler deploy
 ```
 
-3. Connect from your frontend using the React hooks provided by `@cloudflare/agents/react`
+4. Connect from your frontend using the React hooks provided by `@cloudflare/agents/react`
 
 ### Best Practices
 
@@ -134,7 +133,6 @@ wrangler deploy
 - Handle connection drops and reconnections gracefully
 - Log all approval decisions for audit trails
 - Ensure proper error handling and fallbacks
-- Follow accessibility guidelines for UI components
 
 ### Learn More
 
