@@ -71,8 +71,8 @@ export class Agent<Env, State = unknown> extends Server<Env> {
       throw e;
     }
   }
-  constructor(state: DurableObjectState, env: Env) {
-    super(state, env);
+  constructor(ctx: AgentContext, env: Env) {
+    super(ctx, env);
 
     this.sql`
       CREATE TABLE IF NOT EXISTS cf_agents_state (
@@ -387,6 +387,8 @@ export class Agent<Env, State = unknown> extends Server<Env> {
 
 export type AgentNamespace<Agentic extends Agent<unknown>> =
   DurableObjectNamespace<Agentic>;
+
+export type AgentContext = DurableObjectState;
 
 export function routeAgentRequest<Env>(
   request: Request,

@@ -1,4 +1,4 @@
-import { Agent, type Connection, type WSMessage } from "./";
+import { Agent, type AgentContext, type Connection, type WSMessage } from "./";
 import type { Message as ChatMessage, StreamTextOnFinishCallback } from "ai";
 import { appendResponseMessages } from "ai";
 import type { OutgoingMessage, IncomingMessage } from "./ai-types";
@@ -6,7 +6,7 @@ const decoder = new TextDecoder();
 
 export class AIChatAgent<Env = unknown> extends Agent<Env> {
   messages: ChatMessage[];
-  constructor(ctx: DurableObjectState, env: Env) {
+  constructor(ctx: AgentContext, env: Env) {
     super(ctx, env);
     this.sql`create table if not exists cf_ai_chat_agent_messages (
       id text primary key,
