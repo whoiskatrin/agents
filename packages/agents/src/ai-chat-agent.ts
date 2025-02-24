@@ -81,20 +81,8 @@ export class AIChatAgent<Env = unknown> extends Agent<Env> {
               messages,
               responseMessages: response.messages,
             });
-            this.sql`delete from cf_ai_chat_agent_messages`;
-            finalMessages.forEach((message) => {
-              this
-                .sql`insert into cf_ai_chat_agent_messages (id, message) values (${
-                message.id
-              },${JSON.stringify(message)})`;
-            });
-            this.broadcastChatMessage(
-              {
-                type: "cf_agent_chat_messages",
-                messages: finalMessages,
-              },
-              [connection.id]
-            );
+
+            this.saveMessages(finalMessages, [connection.id]);
           }
         );
         if (response) {
@@ -150,6 +138,23 @@ export class AIChatAgent<Env = unknown> extends Agent<Env> {
     );
     // override this to handle incoming messages
   }
+
+  saveMessages(messages: ChatMessage[], excludeBroadcastIds: string[] = []) {
+    this.sql`delete from cf_ai_chat_agent_messages`;
+    messages.forEach((message) => {
+      this.sql`insert into cf_ai_chat_agent_messages (id, message) values (${
+        message.id
+      },${JSON.stringify(message)})`;
+    });
+    this.broadcastChatMessage(
+      {
+        type: "cf_agent_chat_messages",
+        messages: messages,
+      },
+      excludeBroadcastIds
+    );
+  }
+
   private async reply(id: string, response: Response) {
     const chatConnections = [...this.getConnections()].filter(
       (conn: Connection<{ isChatConnection?: boolean }>) =>
