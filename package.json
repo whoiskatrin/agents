@@ -13,7 +13,7 @@
   "author": "Sunil Pai <spai@cloudflare.com>",
   "private": true,
   "scripts": {
-    "build": "npm run build -w @cloudflare/agents",
+    "build": "npm run build -w @cloudflare/agents -w hono-agents",
     "check": "sherif && tsc"
   },
   "license": "MIT",

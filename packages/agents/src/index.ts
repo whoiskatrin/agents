@@ -390,10 +390,12 @@ export type AgentNamespace<Agentic extends Agent<unknown>> =
 
 export type AgentContext = DurableObjectState;
 
+export type AgentOptions<Env> = PartyServerOptions<Env>;
+
 export function routeAgentRequest<Env>(
   request: Request,
   env: Env,
-  options?: PartyServerOptions<Env>
+  options?: AgentOptions<Env>
 ) {
   return routePartykitRequest(request, env as Record<string, unknown>, {
     prefix: "agents",
@@ -404,7 +406,7 @@ export function routeAgentRequest<Env>(
 export async function routeAgentEmail<Env>(
   email: ForwardableEmailMessage,
   env: Env,
-  options?: PartyServerOptions<Env>
+  options?: AgentOptions<Env>
 ): Promise<void> {}
 
 export function getAgentByName<Env, T extends Agent<Env>>(
