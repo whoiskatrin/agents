@@ -15,18 +15,14 @@ type Env = {
 };
 
 export class HumanInTheLoop extends AIChatAgent<Env> {
-  async onChatMessage(
-    connection: Connection,
-    messages: Message[],
-    onFinish: StreamTextOnFinishCallback<any>
-  ) {
+  async onChatMessage(onFinish: StreamTextOnFinishCallback<any>) {
     const dataStreamResponse = createDataStreamResponse({
       execute: async (dataStream) => {
         // Utility function to handle tools that require human confirmation
         // Checks for confirmation in last message and then runs associated tool
         const processedMessages = await processToolCalls(
           {
-            messages,
+            messages: this.messages,
             dataStream,
             tools,
           },

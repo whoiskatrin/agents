@@ -63,33 +63,23 @@ export class AIChatAgent<Env = unknown> extends Agent<Env> {
           },
           [connection.id]
         );
-        const message: ChatMessage = messages[messages.length - 1]; // TODO: we'll only send the last message, but we use this anyway
-        // upsert if it already exists
-        this
-          .sql`insert or replace into cf_ai_chat_agent_messages (id, message) values (${
-          message.id
-        },${JSON.stringify(message)})`;
-        const response = await this.onChatMessage(
-          connection,
-          this.sql`select * from cf_ai_chat_agent_messages`.map((row) => {
-            return JSON.parse(row.message);
-          }),
-          ({ response }) => {
-            // replace the whole db with the new messages?
+        await this.saveMessages(messages, [connection.id]);
+        const response = await this.onChatMessage(async ({ response }) => {
+          // replace the whole db with the new messages?
 
-            const finalMessages = appendResponseMessages({
-              messages,
-              responseMessages: response.messages,
-            });
+          const finalMessages = appendResponseMessages({
+            messages,
+            responseMessages: response.messages,
+          });
 
-            this.saveMessages(finalMessages, [connection.id]);
-          }
-        );
+          await this.saveMessages(finalMessages, [connection.id]);
+        });
         if (response) {
-          this.reply(data.id, response);
+          await this.reply(data.id, response);
         }
       } else if (data.type === "cf_agent_chat_clear") {
         this.sql`delete from cf_ai_chat_agent_messages`;
+        this.messages = [];
         this.broadcastChatMessage(
           {
             type: "cf_agent_chat_clear",
@@ -98,20 +88,7 @@ export class AIChatAgent<Env = unknown> extends Agent<Env> {
         );
       } else if (data.type === "cf_agent_chat_messages") {
         // replace the messages with the new ones
-        this.sql`delete from cf_ai_chat_agent_messages`;
-        (data.messages as ChatMessage[]).forEach((message) => {
-          this
-            .sql`insert into cf_ai_chat_agent_messages (id, message) values (${
-            message.id
-          },${JSON.stringify(message)})`;
-        });
-        this.broadcastChatMessage(
-          {
-            type: "cf_agent_chat_messages",
-            messages: data.messages,
-          },
-          [connection.id]
-        );
+        await this.saveMessages(data.messages, [connection.id]);
       }
     }
   }
@@ -129,8 +106,6 @@ export class AIChatAgent<Env = unknown> extends Agent<Env> {
   }
 
   async onChatMessage(
-    connection: Connection,
-    messages: ChatMessage[],
     onFinish: StreamTextOnFinishCallback<any>
   ): Promise<Response | undefined> {
     throw new Error(
@@ -139,13 +114,17 @@ export class AIChatAgent<Env = unknown> extends Agent<Env> {
     // override this to handle incoming messages
   }
 
-  saveMessages(messages: ChatMessage[], excludeBroadcastIds: string[] = []) {
+  async saveMessages(
+    messages: ChatMessage[],
+    excludeBroadcastIds: string[] = []
+  ) {
     this.sql`delete from cf_ai_chat_agent_messages`;
     messages.forEach((message) => {
       this.sql`insert into cf_ai_chat_agent_messages (id, message) values (${
         message.id
       },${JSON.stringify(message)})`;
     });
+    this.messages = messages;
     this.broadcastChatMessage(
       {
         type: "cf_agent_chat_messages",

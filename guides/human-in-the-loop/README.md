@@ -17,16 +17,12 @@ The implementation showcases:
 
 ```ts
 export class HumanInTheLoop extends AIChatAgent<Env> {
-  async onChatMessage(
-    connection: Connection,
-    messages: Message[],
-    onFinish: StreamTextOnFinishCallback<any>
-  ) {
+  async onChatMessage(onFinish: StreamTextOnFinishCallback<any>) {
     return createDataStreamResponse({
       execute: async (dataStream) => {
         // Process messages and check for tool calls requiring confirmation
         const processedMessages = await processToolCalls({
-          messages,
+          messages: this.messages,
           dataStream,
           tools: {
             getWeatherInformation: {
