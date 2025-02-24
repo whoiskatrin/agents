@@ -130,7 +130,7 @@ export class Agent<Env, State = unknown> extends Server<Env> {
         message.startsWith("cf_agent_state:")
       ) {
         const parsed = JSON.parse(message.slice(15));
-        this.setState(parsed.state, connection);
+        this.#setStateInternal(parsed.state, connection);
         return;
       }
       _onMessage(connection, message);
@@ -152,7 +152,7 @@ export class Agent<Env, State = unknown> extends Server<Env> {
     };
   }
 
-  setState(state: State, source: Connection | "server" = "server") {
+  #setStateInternal(state: State, source: Connection | "server" = "server") {
     this.#state = state;
     this.sql`
     INSERT OR REPLACE INTO cf_agents_state (id, state)
@@ -167,6 +167,10 @@ export class Agent<Env, State = unknown> extends Server<Env> {
       source !== "server" ? [source.id] : []
     );
     this.onStateUpdate(state, source);
+  }
+
+  setState(state: State) {
+    this.#setStateInternal(state, "server");
   }
 
   #warnedToImplementOnStateUpdate = false;
