@@ -121,11 +121,11 @@ ${event.input}
     }
   }
 
-  async onTask(task: Schedule) {
+  async onTask(payload: unknown, schedule: Schedule<string>) {
     this.broadcast(
       JSON.stringify({
         type: "run-schedule",
-        data: convertScheduleToScheduledItem(task),
+        data: convertScheduleToScheduledItem(schedule),
       } satisfies OutgoingMessage)
     );
   }

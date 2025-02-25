@@ -17,10 +17,10 @@ import { WorkflowEntrypoint as CFWorkflowEntrypoint } from "cloudflare:workers";
 
 export class WorkflowEntrypoint extends CFWorkflowEntrypoint {}
 
-export type Schedule = {
+export type Schedule<T = string> = {
   id: string;
   callback: string;
-  payload: string;
+  payload: T;
 } & (
   | {
       type: "scheduled";
@@ -194,11 +194,11 @@ export class Agent<Env, State = unknown> extends Server<Env> {
     throw new Error("Not implemented");
   }
 
-  async schedule(
+  async schedule<T = string>(
     when: Date | string | number,
     callback: string,
-    payload: unknown
-  ): Promise<Schedule> {
+    payload: T
+  ): Promise<Schedule<T>> {
     const id = nanoid(9);
 
     if (when instanceof Date) {
@@ -215,7 +215,7 @@ export class Agent<Env, State = unknown> extends Server<Env> {
       return {
         id,
         callback,
-        payload: JSON.stringify(payload),
+        payload,
         time: timestamp,
         type: "scheduled",
       };
@@ -235,7 +235,7 @@ export class Agent<Env, State = unknown> extends Server<Env> {
       return {
         id,
         callback,
-        payload: JSON.stringify(payload),
+        payload,
         delayInSeconds: when,
         time: timestamp,
         type: "delayed",
@@ -256,7 +256,7 @@ export class Agent<Env, State = unknown> extends Server<Env> {
       return {
         id,
         callback,
-        payload: JSON.stringify(payload),
+        payload,
         cron: when,
         time: timestamp,
         type: "cron",
@@ -265,22 +265,22 @@ export class Agent<Env, State = unknown> extends Server<Env> {
       throw new Error("Invalid schedule type");
     }
   }
-  async getSchedule(id: string): Promise<Schedule | undefined> {
-    const result = this.sql<Schedule>`
+  async getSchedule<T = string>(id: string): Promise<Schedule<T> | undefined> {
+    const result = this.sql<Schedule<string>>`
       SELECT * FROM cf_agents_schedules WHERE id = ${id}
     `;
     if (!result) return undefined;
 
-    return result[0];
+    return { ...result[0], payload: JSON.parse(result[0].payload) as T };
   }
-  getSchedules(
+  getSchedules<T = string>(
     criteria: {
       description?: string;
       id?: string;
       type?: "scheduled" | "delayed" | "cron";
       timeRange?: { start?: Date; end?: Date };
     } = {}
-  ): Schedule[] {
+  ): Schedule<T>[] {
     let query = "SELECT * FROM cf_agents_schedules WHERE 1=1";
     const params = [];
 
@@ -311,7 +311,11 @@ export class Agent<Env, State = unknown> extends Server<Env> {
 
     const result = this.ctx.storage.sql
       .exec(query, ...params)
-      .toArray() as Schedule[];
+      .toArray()
+      .map((row) => ({
+        ...row,
+        payload: JSON.parse(row.payload as string) as T,
+      })) as Schedule<T>[];
 
     return result;
   }
@@ -343,17 +347,26 @@ export class Agent<Env, State = unknown> extends Server<Env> {
     const now = Math.floor(Date.now() / 1000);
 
     // Get all schedules that should be executed now
-    const result = this.sql<Schedule>`
+    const result = this.sql<Schedule<string>>`
       SELECT * FROM cf_agents_schedules WHERE time <= ${now}
     `;
 
     for (const row of result || []) {
-      (
-        this[row.callback as keyof Agent<Env>] as (
-          schedule: Schedule
-        ) => Promise<void>
-      )(row);
-
+      const callback = this[row.callback as keyof Agent<Env>];
+      if (!callback) {
+        console.error(`callback ${row.callback} not found`);
+        continue;
+      }
+      try {
+        (
+          callback as (
+            payload: unknown,
+            schedule: Schedule<unknown>
+          ) => Promise<void>
+        ).bind(this)(JSON.parse(row.payload as string), row);
+      } catch (e) {
+        console.error(`error executing callback ${row.callback}`, e);
+      }
       if (row.type === "cron") {
         // Update next execution time for cron schedules
         const nextExecutionTime = getNextCronTime(row.cron);
