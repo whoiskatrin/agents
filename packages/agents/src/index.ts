@@ -173,19 +173,9 @@ export class Agent<Env, State = unknown> extends Server<Env> {
     this.#setStateInternal(state, "server");
   }
 
-  #warnedToImplementOnStateUpdate = false;
   onStateUpdate(state: State | undefined, source: Connection | "server") {
-    if (!this.#warnedToImplementOnStateUpdate) {
-      console.log(
-        "state updated, implement onStateUpdate in your agent to handle this change"
-      );
-      this.#warnedToImplementOnStateUpdate = true;
-    }
+    // override this to handle state updates
   }
-
-  // onMessage(connection: Connection, message: WSMessage) {}
-
-  // onConnect(connection: Connection, ctx: ConnectionContext) {}
 
   onEmail(email: ForwardableEmailMessage) {
     throw new Error("Not implemented");
