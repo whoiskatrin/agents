@@ -186,10 +186,18 @@ export class Agent<Env, State = unknown> extends Server<Env> {
 
   async schedule<T = string>(
     when: Date | string | number,
-    callback: string,
-    payload: T
+    callback: keyof this,
+    payload?: T
   ): Promise<Schedule<T>> {
     const id = nanoid(9);
+
+    if (typeof callback !== "string") {
+      throw new Error("Callback must be a string");
+    }
+
+    if (typeof this[callback] !== "function") {
+      throw new Error(`this.${callback} is not a function`);
+    }
 
     if (when instanceof Date) {
       const timestamp = Math.floor(when.getTime() / 1000);
@@ -204,8 +212,8 @@ export class Agent<Env, State = unknown> extends Server<Env> {
 
       return {
         id,
-        callback,
-        payload,
+        callback: callback,
+        payload: payload as T,
         time: timestamp,
         type: "scheduled",
       };
@@ -224,8 +232,8 @@ export class Agent<Env, State = unknown> extends Server<Env> {
 
       return {
         id,
-        callback,
-        payload,
+        callback: callback,
+        payload: payload as T,
         delayInSeconds: when,
         time: timestamp,
         type: "delayed",
@@ -245,8 +253,8 @@ export class Agent<Env, State = unknown> extends Server<Env> {
 
       return {
         id,
-        callback,
-        payload,
+        callback: callback,
+        payload: payload as T,
         cron: when,
         time: timestamp,
         type: "cron",
