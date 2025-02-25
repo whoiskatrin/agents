@@ -105,12 +105,12 @@ npm install
 
 ```toml
 [[durable_objects.bindings]]
-binding = "HumanInTheLoopAgent"
-class_name = "HumanInTheLoopAgent"
+binding = "HumanInTheLoop"
+class_name = "HumanInTheLoop"
 
 [[migrations]]
 tag = "v1"
-new_sqlite_classes = ["HumanInTheLoopAgent"]
+new_sqlite_classes = ["HumanInTheLoop"]
 ```
 
 3. Deploy your agent:
