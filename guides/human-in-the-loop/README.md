@@ -133,5 +133,4 @@ wrangler deploy
 ### Learn More
 
 - [Cloudflare Agents Documentation](https://developers.cloudflare.com/agents/)
-- [Building AI Agents with Human Oversight](https://developers.cloudflare.com/agents/patterns/human-in-the-loop/)
-- [State Management in Cloudflare Agents](https://developers.cloudflare.com/agents/state-management/)
+- [Building AI Agents with Human Oversight](https://developers.cloudflare.com/agents/concepts/human-in-the-loop/)
