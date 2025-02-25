@@ -6,6 +6,8 @@ _This project is in active development. Join us in shaping the future of intelli
 
 Welcome to a new paradigm in AI development. Cloudflare Agents provides the foundation for building intelligent, stateful agents that persist, think, and evolve at the edge of the network.
 
+Read the announcement on the Cloudflare blog: https://blog.cloudflare.com/build-ai-agents-on-cloudflare/
+
 ## Vision
 
 We're creating a framework where AI agents can:
