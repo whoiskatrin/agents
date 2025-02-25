@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useAgent } from "@cloudflare/agents/react";
+import { useAgent } from "agents-sdk/react";
 import type {
   IncomingMessage,
   OutgoingMessage,

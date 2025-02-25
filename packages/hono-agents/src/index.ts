@@ -1,9 +1,9 @@
 import { env } from "hono/adapter";
 import { createMiddleware } from "hono/factory";
-import { routeAgentRequest } from "@cloudflare/agents";
+import { routeAgentRequest } from "agents-sdk";
 
 import type { Context, Env } from "hono";
-import type { AgentOptions } from "@cloudflare/agents";
+import type { AgentOptions } from "agents-sdk";
 
 /**
  * Configuration options for the Cloudflare Agents middleware

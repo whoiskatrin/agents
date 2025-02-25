@@ -3,7 +3,6 @@
   "version": "0.0.4",
   "main": "src/index.ts",
   "type": "module",
-  "private": true,
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "build": "tsx ./scripts/build.ts"
@@ -28,11 +27,11 @@
   "license": "MIT",
   "description": "Add Cloudflare Agents to your Hono app",
   "peerDependencies": {
-    "@cloudflare/agents": "^0.0.16",
+    "agents-sdk": "^0.0.16",
     "hono": "^4.6.17"
   },
   "devDependencies": {
-    "@cloudflare/agents": "^0.0.16",
+    "agents-sdk": "^0.0.16",
     "hono": "^4.6.17"
   }
 }

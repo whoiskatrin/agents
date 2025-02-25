@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useAgent } from "@cloudflare/agents/react";
+import { useAgent } from "agents-sdk/react";
 
 interface StateProps {
   addToast: (message: string, type?: "success" | "error" | "info") => void;

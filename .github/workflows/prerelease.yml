@@ -34,7 +34,7 @@ jobs:
           NPM_PUBLISH_TOKEN: ${{ secrets.NPM_PUBLISH_TOKEN }}
         working-directory: packages/agents
 
-      # - run: npm publish --tag beta
-      #   env:
-      #     NPM_PUBLISH_TOKEN: ${{ secrets.NPM_PUBLISH_TOKEN }}
-      #   working-directory: packages/hono-agents
+      - run: npm publish --tag beta
+        env:
+          NPM_PUBLISH_TOKEN: ${{ secrets.NPM_PUBLISH_TOKEN }}
+        working-directory: packages/hono-agents

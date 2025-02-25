@@ -1,7 +1,7 @@
 import { z } from "zod";
-import { Agent } from "@cloudflare/agents";
+import { Agent } from "agents-sdk";
 import type { Env } from "../server";
-import type { Schedule } from "@cloudflare/agents";
+import type { Schedule } from "agents-sdk";
 
 import type {
   ScheduledItem,
@@ -9,7 +9,7 @@ import type {
   IncomingMessage,
 } from "../shared";
 
-import type { Connection, ConnectionContext } from "@cloudflare/agents";
+import type { Connection, ConnectionContext } from "agents-sdk";
 
 import { createOpenAI } from "@ai-sdk/openai";
 import { generateObject } from "ai";

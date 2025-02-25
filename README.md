@@ -43,10 +43,10 @@ This project is actively evolving. Current focus areas:
 
 ```bash
 # Create a new project
-npm create cloudflare@latest -- --template agents
+npm create cloudflare@latest -- --template cloudflare/agents-starter
 
 # Or add to existing project
-npm install @cloudflare/agents
+npm install agents-sdk
 ```
 
 ## Documentation
@@ -82,7 +82,7 @@ Add intelligent, stateful AI agents to your Hono app. Create persistent AI agent
 ## Installation
 
 ```bash
-npm install hono-agents hono @cloudflare/agents
+npm install hono-agents hono agents-sdk
 ```
 
 ## Usage
@@ -90,7 +90,7 @@ npm install hono-agents hono @cloudflare/agents
 ```ts
 import { Hono } from "hono";
 import { agentsMiddleware } from "hono-agents";
-import { Agent } from "@cloudflare/agents";
+import { Agent } from "agents-sdk";
 
 // Define your agent classes
 export class ChatAgent extends Agent {
@@ -142,7 +142,7 @@ export default app;
 ## React Usage
 
 ```tsx
-import { useAgent } from "@cloudflare/agents/react";
+import { useAgent } from "agents-sdk";
 
 // Basic connection
 const agent = useAgent({ agent: "chat-agent", name: "support" });

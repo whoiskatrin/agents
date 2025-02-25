@@ -7,7 +7,7 @@ Add intelligent, stateful AI agents to your Hono app. Create persistent AI agent
 ## Installation
 
 ```bash
-npm install hono-agents hono @cloudflare/agents
+npm install hono-agents hono agents-sdk
 ```
 
 ## Usage
@@ -15,7 +15,7 @@ npm install hono-agents hono @cloudflare/agents
 ```ts
 import { Hono } from "hono";
 import { agentsMiddleware } from "hono-agents";
-import { Agent } from "@cloudflare/agents";
+import { Agent } from "agents-sdk";
 
 // Define your agent classes
 export class ChatAgent extends Agent {
@@ -99,6 +99,6 @@ Agents can:
 
 ## License
 
-Learn more about Cloudflare Agents at https://www.npmjs.com/package/@cloudflare/agents
+Learn more about Cloudflare Agents at https://www.npmjs.com/package/agents-sdk
 
 ISC

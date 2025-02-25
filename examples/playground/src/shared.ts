@@ -1,5 +1,3 @@
-import type { Schedule } from "@cloudflare/agents";
-
 export type IncomingMessage =
   | {
       type: "schedule";

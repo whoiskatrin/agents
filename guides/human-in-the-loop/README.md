@@ -119,7 +119,7 @@ new_sqlite_classes = ["HumanInTheLoopAgent"]
 wrangler deploy
 ```
 
-4. Connect from your frontend using the React hooks provided by `@cloudflare/agents/react`
+4. Connect from your frontend using the React hooks provided by `agents-sdk/react`
 
 ### Best Practices
 

@@ -1,4 +1,4 @@
-import { routeAgentEmail, routeAgentRequest } from "@cloudflare/agents";
+import { routeAgentEmail, routeAgentRequest } from "agents-sdk";
 
 import { Scheduler } from "./agents/scheduler";
 import { Stateful } from "./agents/stateful";

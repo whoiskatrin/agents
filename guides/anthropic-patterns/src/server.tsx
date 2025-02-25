@@ -6,7 +6,7 @@ import {
   routeAgentRequest,
   type Connection,
   type WSMessage,
-} from "@cloudflare/agents";
+} from "agents-sdk";
 import { createOpenAI, type OpenAIProvider } from "@ai-sdk/openai";
 import { generateText, generateObject } from "ai";
 import { z } from "zod";

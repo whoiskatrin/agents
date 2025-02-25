@@ -1,7 +1,7 @@
 import "./app.css";
 
 import { useEffect, useState, useMemo } from "react";
-import { useAgent } from "@cloudflare/agents/react";
+import { useAgent } from "agents-sdk/react";
 
 import sequentialCode from "./flows/01 sequential.txt?raw";
 import routingCode from "./flows/02 routing.txt?raw";
