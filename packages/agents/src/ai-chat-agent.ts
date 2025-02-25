@@ -21,11 +21,19 @@ export class AIChatAgent<Env = unknown> extends Agent<Env> {
   }
 
   private sendChatMessage(connection: Connection, message: OutgoingMessage) {
-    connection.send(JSON.stringify(message));
+    try {
+      connection.send(JSON.stringify(message));
+    } catch (e) {
+      // silently ignore
+    }
   }
 
   private broadcastChatMessage(message: OutgoingMessage, exclude?: string[]) {
-    this.broadcast(JSON.stringify(message), exclude);
+    try {
+      this.broadcast(JSON.stringify(message), exclude);
+    } catch (e) {
+      // silently ignore
+    }
   }
 
   override async onMessage(connection: Connection, message: WSMessage) {
