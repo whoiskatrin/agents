@@ -63,16 +63,14 @@ export class AIChatAgent<Env = unknown> extends Agent<Env> {
           },
           [connection.id]
         );
-        await this.saveMessages(messages, [connection.id]);
+        await this.persistMessages(messages, [connection.id]);
         const response = await this.onChatMessage(async ({ response }) => {
-          // replace the whole db with the new messages?
-
           const finalMessages = appendResponseMessages({
             messages,
             responseMessages: response.messages,
           });
 
-          await this.saveMessages(finalMessages, [connection.id]);
+          await this.persistMessages(finalMessages, [connection.id]);
         });
         if (response) {
           await this.reply(data.id, response);
@@ -88,7 +86,7 @@ export class AIChatAgent<Env = unknown> extends Agent<Env> {
         );
       } else if (data.type === "cf_agent_chat_messages") {
         // replace the messages with the new ones
-        await this.saveMessages(data.messages, [connection.id]);
+        await this.persistMessages(data.messages, [connection.id]);
       }
     }
   }
@@ -105,16 +103,43 @@ export class AIChatAgent<Env = unknown> extends Agent<Env> {
     return super.onRequest(request);
   }
 
+  /*
+   * override this to handle incoming messages
+   * @param onFinish - a callback that is called when the response is finished
+   * @returns a Response to send to the client
+   */
   async onChatMessage(
     onFinish: StreamTextOnFinishCallback<any>
   ): Promise<Response | undefined> {
     throw new Error(
       "recieved a chat message, override onChatMessage and return a Response to send to the client"
     );
-    // override this to handle incoming messages
   }
 
-  async saveMessages(
+  /*
+   * You can save messages on the server side
+   */
+  async saveMessages(messages: ChatMessage[]) {
+    await this.persistMessages(messages);
+    const response = await this.onChatMessage(async ({ response }) => {
+      const finalMessages = appendResponseMessages({
+        messages,
+        responseMessages: response.messages,
+      });
+
+      await this.persistMessages(finalMessages, []);
+    });
+    if (response) {
+      // we're just going to drain the body
+      // @ts-ignore TODO: fix this type error
+      for await (const chunk of response.body!) {
+        decoder.decode(chunk);
+      }
+      response.body?.cancel();
+    }
+  }
+
+  private async persistMessages(
     messages: ChatMessage[],
     excludeBroadcastIds: string[] = []
   ) {
