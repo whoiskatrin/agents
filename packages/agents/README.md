@@ -95,7 +95,7 @@ Define your agent's domain:
   "durable_objects": {
     "bindings": [
       {
-        "binding": "AIAgent",
+        "name": "AIAgent",
         "class_name": "AIAgent"
       }
     ]
