@@ -31,7 +31,7 @@
     "@vitejs/plugin-react": "^4.3.4",
     "ai": "^4.1.54",
     "fast-glob": "^3.3.3",
-    "partyserver": "^0.0.64",
+    "partyserver": "^0.0.65",
     "partysocket": "0.0.0-548c226",
     "prettier": "^3.5.3",
     "react": "^19.0.0",
