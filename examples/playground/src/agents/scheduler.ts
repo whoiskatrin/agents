@@ -57,10 +57,10 @@ export class Scheduler extends Agent<Env> {
         schemaDescription: "A task to be scheduled",
         schema: unstable_scheduleSchema, // <- the shape of the object that the scheduler expects
         maxRetries: 5,
-        prompt: unstable_getSchedulePrompt({
+        prompt: `${unstable_getSchedulePrompt({
           date: new Date(),
-          input: event.input,
-        }),
+        })} 
+Input to parse: "${event.input}"`,
       });
       const { when, description } = result.object;
       if (when.type === "no-schedule") {

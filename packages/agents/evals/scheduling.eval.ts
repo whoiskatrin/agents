@@ -324,7 +324,9 @@ evalite<string, Schedule>("Evals for scheduling", {
       // schemaDescription: "A task to be scheduled",
       schema: unstable_scheduleSchema, // <- the shape of the object that the scheduler expects
       maxRetries: 5,
-      prompt: unstable_getSchedulePrompt({ date: new Date(), input }),
+      prompt: `${unstable_getSchedulePrompt({ date: new Date() })}
+      
+Input to parse: "${input}"`,
     });
     return result.object;
   },

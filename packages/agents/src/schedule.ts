@@ -1,15 +1,10 @@
 import { z } from "zod";
 
-export function unstable_getSchedulePrompt(event: {
-  date: Date;
-  input: string;
-}) {
+export function unstable_getSchedulePrompt(event: { date: Date }) {
   return `
 [Schedule Parser Component]
 
 Current time: ${event.date.toUTCString()}
-
-Input to parse: "${event.input}"
 
 This component parses natural language scheduling requests into a structured format. It extracts:
 1. A clean task description (without timing information)
