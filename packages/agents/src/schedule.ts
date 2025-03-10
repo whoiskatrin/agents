@@ -1,5 +1,7 @@
 import { z } from "zod";
 
+export type Schedule = z.infer<typeof unstable_scheduleSchema>;
+
 export function unstable_getSchedulePrompt(event: { date: Date }) {
   return `
 [Schedule Parser Component]

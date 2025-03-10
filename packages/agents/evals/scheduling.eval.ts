@@ -7,8 +7,20 @@ import type { z } from "zod";
 import {
   unstable_getSchedulePrompt,
   unstable_scheduleSchema,
+  type Schedule,
 } from "../src/schedule";
 
+const model = openai("gpt-4o");
+// const model = google("gemini-2.0-pro-exp-02-05");
+// const model = anthropic("claude-3-5-sonnet-20240620"); // also disable mode: "json"
+
+function assert(condition: unknown, message: string): asserts condition {
+  if (!condition) {
+    throw new Error(message);
+  }
+}
+
+// scorers
 const getsType = createScorer<string, Schedule>({
   name: "getsType",
   description: "Checks if the output is the right type",
@@ -16,12 +28,6 @@ const getsType = createScorer<string, Schedule>({
     return output.when.type === expected?.when.type ? 1 : 0;
   },
 });
-
-function assert(condition: unknown, message: string): asserts condition {
-  if (!condition) {
-    throw new Error(message);
-  }
-}
 
 const getsDetail = createScorer<string, Schedule>({
   name: "getsDetail",
@@ -65,15 +71,15 @@ const getsDescription = createScorer<string, Schedule>({
   name: "getsDescription",
   description: "Checks if the output is the right description",
   scorer: ({ input, output, expected }) => {
-    return output.description === expected?.description ? 1 : 0;
+    return output.description.toLowerCase() ===
+      expected?.description.toLowerCase()
+      ? 1
+      : 0;
   },
 });
 
-export type Schedule = z.infer<typeof unstable_scheduleSchema>;
-
 evalite<string, Schedule>("Evals for scheduling", {
   // A function that returns an array of test data
-  // - TODO: Replace with your test data
   data: async () => {
     return [
       {
@@ -318,10 +324,8 @@ evalite<string, Schedule>("Evals for scheduling", {
   // The task to perform
   task: async (input) => {
     const result = await generateObject({
-      model: openai("gpt-4o"),
-      // model: google("gemini-2.0-pro-exp-02-05", { structuredOutputs: false }),
-      // model: anthropic("claude-3-5-sonnet-20240620"),
-      mode: "json",
+      model,
+      // mode: "json",
       // schemaName: "task",
       // schemaDescription: "A task to be scheduled",
       schema: unstable_scheduleSchema, // <- the shape of the object that the scheduler expects
