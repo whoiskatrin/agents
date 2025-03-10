@@ -1,8 +1,8 @@
 import { evalite, createScorer } from "evalite";
-// import { Factuality, Levenshtein } from "autoevals";
-// import { traceAISDKModel } from "evalite/ai-sdk";
 import { generateObject } from "ai";
 import { openai } from "@ai-sdk/openai";
+import { google } from "@ai-sdk/google";
+import { anthropic } from "@ai-sdk/anthropic";
 import type { z } from "zod";
 import {
   unstable_getSchedulePrompt,
@@ -319,6 +319,8 @@ evalite<string, Schedule>("Evals for scheduling", {
   task: async (input) => {
     const result = await generateObject({
       model: openai("gpt-4o"),
+      // model: google("gemini-2.0-pro-exp-02-05", { structuredOutputs: false }),
+      // model: anthropic("claude-3-5-sonnet-20240620"),
       mode: "json",
       // schemaName: "task",
       // schemaDescription: "A task to be scheduled",
