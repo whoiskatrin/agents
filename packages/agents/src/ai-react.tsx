@@ -53,7 +53,7 @@ export function useAgentChat(options: UseAgentChatOptions) {
   const getInitialMessagesFetch =
     getInitialMessages || defaultGetInitialMessagesFetch;
 
-  async function doGetInitialMessages(
+  function doGetInitialMessages(
     getInitialMessagesOptions: GetInitialMessagesOptions
   ) {
     if (requestCache.has(url)) {
