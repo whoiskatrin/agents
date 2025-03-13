@@ -169,12 +169,6 @@ export function useAgentChat(options: UseAgentChatOptions) {
   });
 
   useEffect(() => {
-    agent.send(
-      JSON.stringify({
-        type: "cf_agent_chat_init",
-      })
-    );
-
     function onClearHistory(event: MessageEvent) {
       if (typeof event.data !== "string") {
         return;
@@ -205,7 +199,6 @@ export function useAgentChat(options: UseAgentChatOptions) {
   }, [
     agent.addEventListener,
     agent.removeEventListener,
-    agent.send,
     useChatHelpers.setMessages,
   ]);
 

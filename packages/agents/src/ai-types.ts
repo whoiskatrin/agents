@@ -36,12 +36,6 @@ export type OutgoingMessage =
  */
 export type IncomingMessage =
   | {
-      /** Indicates this message is initializing a chat connection */
-      type: "cf_agent_chat_init";
-      /** Initial messages to load, if any */
-      messages: ChatMessage[];
-    }
-  | {
       /** Indicates this message is a request to the chat API */
       type: "cf_agent_use_chat_request";
       /** Unique ID for this request */

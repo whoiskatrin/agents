@@ -51,12 +51,7 @@ export class AIChatAgent<Env = unknown, State = unknown> extends Agent<
   override async onMessage(connection: Connection, message: WSMessage) {
     if (typeof message === "string") {
       const data = JSON.parse(message) as IncomingMessage;
-      if (data.type === "cf_agent_chat_init") {
-        connection.setState({
-          ...connection.state,
-          isChatConnection: true,
-        });
-      } else if (
+      if (
         data.type === "cf_agent_use_chat_request" &&
         data.init.method === "POST"
       ) {
@@ -181,17 +176,13 @@ export class AIChatAgent<Env = unknown, State = unknown> extends Agent<
   }
 
   private async reply(id: string, response: Response) {
-    const chatConnections = [...this.getConnections()].filter(
-      (conn: Connection<{ isChatConnection?: boolean }>) =>
-        conn.state?.isChatConnection
-    );
     // now take chunks out from dataStreamResponse and send them to the client
 
-    // @ts-ignore TODO: fix this type error
+    // @ts-expect-error TODO: fix this type error
     for await (const chunk of response.body!) {
       const body = decoder.decode(chunk);
 
-      for (const conn of chatConnections) {
+      for (const conn of this.getConnections()) {
         this.sendChatMessage(conn, {
           id,
           type: "cf_agent_use_chat_response",
@@ -201,7 +192,7 @@ export class AIChatAgent<Env = unknown, State = unknown> extends Agent<
       }
     }
 
-    for (const conn of chatConnections) {
+    for (const conn of this.getConnections()) {
       this.sendChatMessage(conn, {
         id,
         type: "cf_agent_use_chat_response",

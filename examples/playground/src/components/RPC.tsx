@@ -11,9 +11,10 @@ export default function RPC({
 }: {
   addToast: (message: string, type: "success" | "error" | "info") => void;
 }) {
-  const { call } = useAgent({ agent: "rpc" });
   const [messages, setMessages] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
+
+  const { call } = useAgent({ agent: "rpc" });
 
   const handleRegularCall = async () => {
     try {
