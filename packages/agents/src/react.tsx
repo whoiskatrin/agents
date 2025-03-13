@@ -59,5 +59,17 @@ export function useAgent<State = unknown>(
   agent.agent = options.agent;
   agent.name = options.name || "default";
 
+  // warn if agent or name isn't in lowercase
+  if (agent.agent !== agent.agent.toLowerCase()) {
+    console.warn(
+      `Agent name: ${agent.agent} should probably be in lowercase. Received: ${agent.agent}`
+    );
+  }
+  if (agent.name !== agent.name.toLowerCase()) {
+    console.warn(
+      `Agent instance name: ${agent.name} should probably be in lowercase. Received: ${agent.name}`
+    );
+  }
+
   return agent;
 }

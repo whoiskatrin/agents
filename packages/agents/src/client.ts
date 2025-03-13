@@ -47,6 +47,17 @@ export class AgentClient extends PartySocket {
     });
     this.agent = opts.agent;
     this.name = opts.name || "default";
+    // warn if agent or name isn't in lowercase
+    if (this.agent !== this.agent.toLowerCase()) {
+      console.warn(
+        `Agent name: ${this.agent} should probably be in lowercase. Received: ${this.agent}`
+      );
+    }
+    if (this.name !== this.name.toLowerCase()) {
+      console.warn(
+        `Agent instance name: ${this.name} should probably be in lowercase. Received: ${this.name}`
+      );
+    }
   }
 }
 
@@ -57,6 +68,18 @@ export class AgentClient extends PartySocket {
  * @returns Promise resolving to a Response
  */
 export function agentFetch(opts: AgentClientFetchOptions, init?: RequestInit) {
+  // warn if agent or name isn't in lowercase
+  if (opts.agent !== opts.agent.toLowerCase()) {
+    console.warn(
+      `Agent name: ${opts.agent} should probably be in lowercase. Received: ${opts.agent}`
+    );
+  }
+  if (opts.name && opts.name !== opts.name.toLowerCase()) {
+    console.warn(
+      `Agent instance name: ${opts.name} should probably be in lowercase. Received: ${opts.name}`
+    );
+  }
+
   return PartySocket.fetch(
     {
       prefix: "agents",
