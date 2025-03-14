@@ -1,0 +1,13 @@
+{
+  "name": "@cloudflare/agents-cross-domain",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "start": "concurrently \"vite dev\" \"wrangler dev\" --kill-others"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "description": "A simple demo showing WebSocket and HTTP communication between a React client and Cloudflare Worker server, when running on different domains."
+}
