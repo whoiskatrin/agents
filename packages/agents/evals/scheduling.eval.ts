@@ -12,6 +12,8 @@ import {
 
 const model = openai("gpt-4o");
 // const model = google("gemini-2.0-pro-exp-02-05");
+// const model = google("gemini-2.0-flash");
+// const model = google("gemini-1.5-pro");
 // const model = anthropic("claude-3-5-sonnet-20240620"); // also disable mode: "json"
 
 function assert(condition: unknown, message: string): asserts condition {
@@ -39,7 +41,7 @@ const getsDetail = createScorer<string, Schedule>({
           output.when.type === "scheduled",
           "Output is not a scheduled task"
         );
-        return output.when.date.getTime() === expected.when.date.getTime()
+        return output.when?.date?.getTime() === expected.when?.date?.getTime()
           ? 1
           : 0;
       }
@@ -323,18 +325,23 @@ evalite<string, Schedule>("Evals for scheduling", {
   },
   // The task to perform
   task: async (input) => {
-    const result = await generateObject({
-      model,
-      // mode: "json",
-      // schemaName: "task",
-      // schemaDescription: "A task to be scheduled",
-      schema: unstable_scheduleSchema, // <- the shape of the object that the scheduler expects
-      maxRetries: 5,
-      prompt: `${unstable_getSchedulePrompt({ date: new Date() })}
+    try {
+      const result = await generateObject({
+        model,
+        // mode: "json",
+        // schemaName: "task",
+        // schemaDescription: "A task to be scheduled",
+        schema: unstable_scheduleSchema, // <- the shape of the object that the scheduler expects
+        maxRetries: 5,
+        prompt: `${unstable_getSchedulePrompt({ date: new Date() })}
       
 Input to parse: "${input}"`,
-    });
-    return result.object;
+      });
+      return result.object;
+    } catch (error) {
+      console.error(error);
+      throw error;
+    }
   },
   scorers: [getsType, getsDetail, getsDescription],
 });
