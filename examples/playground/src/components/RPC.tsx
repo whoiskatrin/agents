@@ -2,10 +2,6 @@ import { useAgent } from "agents/react";
 import { useState } from "react";
 import "./RPC.css";
 
-interface StreamOptions {
-  onMessage?: (message: unknown) => void;
-}
-
 export default function RPC({
   addToast,
 }: {

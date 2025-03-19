@@ -32,10 +32,6 @@ export class AIChatAgent<Env = unknown, State = unknown> extends Agent<
     });
   }
 
-  #sendChatMessage(connection: Connection, message: OutgoingMessage) {
-    connection.send(JSON.stringify(message));
-  }
-
   #broadcastChatMessage(message: OutgoingMessage, exclude?: string[]) {
     this.broadcast(JSON.stringify(message), exclude);
   }

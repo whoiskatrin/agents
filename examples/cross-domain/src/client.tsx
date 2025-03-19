@@ -1,6 +1,6 @@
 import { useAgent } from "agents/react";
 import { createRoot } from "react-dom/client";
-import { useRef, useState, useEffect } from "react";
+import { useRef, useState } from "react";
 import { agentFetch } from "agents/client";
 import "./styles.css";
 

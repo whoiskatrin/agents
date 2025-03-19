@@ -485,43 +485,8 @@ export const Evaluator = createAgent(
   }
 );
 
-async function getCachedResponse(
-  request: Request,
-  or: () => Response | Promise<Response>
-) {
-  // @ts-ignore mixing browser and server types here
-  const cache: Cache = caches.default;
-  const response = await cache.match(request);
-  if (response) {
-    return response;
-  }
-  const newResponse = await or();
-  await cache.put(request, newResponse.clone());
-  return newResponse;
-}
-
 export default {
   async fetch(request, env, _ctx) {
-    // // bring thi back when we figure out SSR
-    // const pathname = new URL(request.url).pathname;
-    // if (pathname === "/") {
-    //   return getCachedResponse(
-    //     request,
-    //     () =>
-    //       new Response(
-    //         renderToString(
-    //           <Layout>
-    //             <App />
-    //           </Layout>
-    //         ),
-    //         {
-    //           headers: {
-    //             "Content-Type": "text/html",
-    //           },
-    //         }
-    //       )
-    //   );
-    // }
     return (
       (await routeAgentRequest(request, env)) ||
       new Response("Not found", { status: 404 })

@@ -323,30 +323,6 @@ function PatternSection({
     }
   };
 
-  const getExampleOutput = () => {
-    if (type === "sequential") {
-      const state = formState as FormState["sequential"];
-      return `Processing marketing copy for: "${state.input}"\n1. Generating initial copy...\n2. Evaluating quality metrics...\n3. Final output: Compelling marketing message created`;
-    }
-    if (type === "routing") {
-      const state = formState as FormState["routing"];
-      return `Analyzing query: "${state.query}"\nRouting to appropriate department...\nGenerating specialized response...`;
-    }
-    if (type === "parallel") {
-      const state = formState as FormState["parallel"];
-      return `Running parallel code reviews for:\n${state.code}\nSecurity Review: Complete\nPerformance Review: Complete\nMaintainability Review: Complete`;
-    }
-    if (type === "orchestrator") {
-      const state = formState as FormState["orchestrator"];
-      return `Planning implementation for: "${state.featureRequest}"\n1. Analyzing requirements\n2. Breaking down tasks\n3. Assigning to workers`;
-    }
-    if (type === "evaluator") {
-      const state = formState as FormState["evaluator"];
-      return `Translating text to ${state.targetLanguage}:\n"${state.text}"\nGenerating translation...\nEvaluating quality...\nRefining output...`;
-    }
-    return "";
-  };
-
   const formatOutput = (output: string) => {
     try {
       // Try to parse as JSON first

@@ -1,13 +1,12 @@
 import { createOpenAI } from "@ai-sdk/openai";
 import {
   createDataStreamResponse,
-  type Message,
   streamText,
   type StreamTextOnFinishCallback,
 } from "ai";
 import { processToolCalls } from "./utils";
 import { tools } from "./tools";
-import { type Connection, routeAgentRequest } from "agents";
+import { routeAgentRequest } from "agents";
 import { AIChatAgent } from "agents/ai-chat-agent";
 
 type Env = {
