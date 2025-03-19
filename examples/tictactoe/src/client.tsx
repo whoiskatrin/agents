@@ -1,6 +1,6 @@
 import { useAgent } from "agents/react";
 import { createRoot } from "react-dom/client";
-import React, { useRef, useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import type { TicTacToeState } from "./server";
 import "./styles.css";
 

@@ -4,7 +4,6 @@ import {
   routeAgentRequest,
   unstable_callable as callable,
   type AgentNamespace,
-  type Connection,
 } from "agents";
 
 import { generateObject } from "ai";
