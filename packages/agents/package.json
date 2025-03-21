@@ -68,7 +68,6 @@
     "partysocket": "0.0.0-548c226"
   },
   "devDependencies": {
-    "@modelcontextprotocol/sdk": "^1.7.0",
-    "hono": "^4.7.5"
+    "@modelcontextprotocol/sdk": "^1.7.0"
   }
 }
