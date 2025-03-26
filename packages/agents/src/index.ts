@@ -170,7 +170,7 @@ const STATE_WAS_CHANGED = "cf_state_was_changed";
 
 const DEFAULT_STATE = {} as unknown;
 
-export const context = new AsyncLocalStorage<{
+export const unstable_context = new AsyncLocalStorage<{
   agent: Agent<unknown>;
   connection: Connection | undefined;
   request: Request | undefined;
@@ -300,7 +300,7 @@ export class Agent<Env, State = unknown> extends Server<Env> {
 
     const _onMessage = this.onMessage.bind(this);
     this.onMessage = async (connection: Connection, message: WSMessage) => {
-      return context.run(
+      return unstable_context.run(
         { agent: this, connection, request: undefined },
         async () => {
           if (typeof message !== "string") {
@@ -378,7 +378,7 @@ export class Agent<Env, State = unknown> extends Server<Env> {
     this.onConnect = (connection: Connection, ctx: ConnectionContext) => {
       // TODO: This is a hack to ensure the state is sent after the connection is established
       // must fix this
-      return context.run(
+      return unstable_context.run(
         { agent: this, connection, request: ctx.request },
         async () => {
           setTimeout(() => {
@@ -415,10 +415,13 @@ export class Agent<Env, State = unknown> extends Server<Env> {
       source !== "server" ? [source.id] : []
     );
     return this.#tryCatch(() => {
-      const { connection, request } = context.getStore() || {};
-      return context.run({ agent: this, connection, request }, async () => {
-        return this.onStateUpdate(state, source);
-      });
+      const { connection, request } = unstable_context.getStore() || {};
+      return unstable_context.run(
+        { agent: this, connection, request },
+        async () => {
+          return this.onStateUpdate(state, source);
+        }
+      );
     });
   }
 
@@ -444,7 +447,7 @@ export class Agent<Env, State = unknown> extends Server<Env> {
    * @param email Email message to process
    */
   onEmail(email: ForwardableEmailMessage) {
-    return context.run(
+    return unstable_context.run(
       { agent: this, connection: undefined, request: undefined },
       async () => {
         console.error("onEmail not implemented");
@@ -700,7 +703,7 @@ export class Agent<Env, State = unknown> extends Server<Env> {
         console.error(`callback ${row.callback} not found`);
         continue;
       }
-      await context.run(
+      await unstable_context.run(
         { agent: this, connection: undefined, request: undefined },
         async () => {
           try {
