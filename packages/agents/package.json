@@ -1,6 +1,6 @@
 {
   "name": "agents",
-  "version": "0.0.53",
+  "version": "0.0.54",
   "main": "src/index.ts",
   "type": "module",
   "scripts": {
@@ -52,6 +52,11 @@
       "types": "./dist/mcp/client.d.ts",
       "require": "./dist/mcp/client.js",
       "import": "./dist/mcp/client.js"
+    },
+    "./mcp/do-oauth-client-provider": {
+      "types": "./dist/mcp/do-oauth-client-provider.d.ts",
+      "require": "./dist/mcp/do-oauth-client-provider.js",
+      "import": "./dist/mcp/do-oauth-client-provider.js"
     }
   },
   "keywords": [],
