@@ -72,6 +72,10 @@ export function useAgent<State = unknown>(
     >()
   );
 
+  // TODO: if options.query is a function, then use
+  // "use()" to get the value and pass it
+  // as a query parameter to usePartySocket
+
   // Create the call method
   const call = useCallback(
     <T = unknown,>(
