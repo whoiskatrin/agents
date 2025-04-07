@@ -93,15 +93,12 @@ export abstract class McpAgent<
    * websockets, don't support hibernation), let's only expose a couple of the methods
    * to the outer class: initialState/state/setState/onStateUpdate/sql
    */
-  readonly #agent: Agent<Env, State>;
+  #agent: Agent<Env, State>;
 
   protected constructor(ctx: DurableObjectState, env: Env) {
     super(ctx, env);
     const self = this;
 
-    // Since McpAgent's _aren't_ yet real "Agents" (they route differently, they don't support
-    // scheduling etc, let's only expose a couple of the methods
-    // to the outer class for now.
     this.#agent = new (class extends Agent<Env, State> {
       static options = {
         hibernate: true,
@@ -118,7 +115,6 @@ export abstract class McpAgent<
    */
   initialState!: State;
   get state() {
-    if (this.initialState) this.#agent.initialState = this.initialState;
     return this.#agent.state;
   }
   sql<T = Record<string, string | number | boolean | null>>(
@@ -135,6 +131,19 @@ export abstract class McpAgent<
     // override this to handle state updates
   }
   async onStart() {
+    const self = this;
+
+    this.#agent = new (class extends Agent<Env, State> {
+      initialState: State = self.initialState;
+      static options = {
+        hibernate: true,
+      };
+
+      onStateUpdate(state: State | undefined, source: Connection | "server") {
+        return self.onStateUpdate(state, source);
+      }
+    })(this.ctx, this.env);
+
     this.props = (await this.ctx.storage.get("props")) as Props;
     this.init?.();
 
@@ -190,26 +199,23 @@ export abstract class McpAgent<
       return new Response("Missing sessionId", { status: 400 });
     }
 
-    // Create a WebSocket pair
-    const webSocketPair = new WebSocketPair();
-    const [client, server] = Object.values(webSocketPair);
-
     // For now, each agent can only have one connection
     // If we get an upgrade while already connected, we should error
     if (this.#connected) {
       return new Response("WebSocket already connected", { status: 400 });
     }
-    this.ctx.acceptWebSocket(server);
+
+    // Defer to the Agent's fetch method to handle the WebSocket connection
+    // PartyServer does a lot to manage the connections under the hood
+    const response = await this.#agent.fetch(request);
+
     this.#connected = true;
 
     // Connect to the MCP server
     this.#transport = new McpTransport(() => this.getWebSocket());
     await this.server.connect(this.#transport);
 
-    return new Response(null, {
-      status: 101,
-      webSocket: client,
-    });
+    return response;
   }
 
   getWebSocket() {
@@ -362,7 +368,6 @@ export abstract class McpAgent<
           const doStub = namespace.get(id);
 
           // Initialize the object
-          // @ts-ignore
           await doStub._init(ctx.props);
 
           // Connect to the Durable Object via WebSocket
@@ -372,6 +377,8 @@ export abstract class McpAgent<
             new Request(upgradeUrl, {
               headers: {
                 Upgrade: "websocket",
+                // Required by PartyServer
+                "x-partykit-room": sessionId,
               },
             })
           );
@@ -393,27 +400,16 @@ export abstract class McpAgent<
               const message = JSON.parse(event.data);
 
               // validate that the message is a valid JSONRPC message
-              // https://www.jsonrpc.org/specification#response_object
-              if (!(typeof message.id === "number" || message.id === null)) {
-                throw new Error("Invalid jsonrpc message id");
-              }
-
-              if (message.jsonrpc !== "2.0") {
-                throw new Error("Invalid jsonrpc version");
-              }
-
-              // must have either result or error field
-              if (
-                !Object.hasOwn(message, "result") &&
-                !Object.hasOwn(message, "error")
-              ) {
-                throw new Error(
-                  "Invalid jsonrpc message. Must have either result or error field"
-                );
+              const result = JSONRPCMessageSchema.safeParse(message);
+              if (!result.success) {
+                // The message was not a valid JSONRPC message, so we will drop it
+                // PartyKit will broadcast state change messages to all connected clients
+                // and we need to filter those out so they are not passed to MCP clients
+                return;
               }
 
               // Send the message as an SSE event
-              const messageText = `event: message\ndata: ${event.data}\n\n`;
+              const messageText = `event: message\ndata: ${JSON.stringify(result.data)}\n\n`;
               await writer.write(encoder.encode(messageText));
             } catch (error) {
               console.error("Error forwarding message to SSE:", error);
