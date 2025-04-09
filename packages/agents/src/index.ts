@@ -15,8 +15,6 @@ import { AsyncLocalStorage } from "node:async_hooks";
 
 export type { Connection, WSMessage, ConnectionContext } from "partyserver";
 
-import { WorkflowEntrypoint as CFWorkflowEntrypoint } from "cloudflare:workers";
-
 /**
  * RPC request message from client
  */
