@@ -118,11 +118,6 @@ export function unstable_callable(metadata: CallableMetadata = {}) {
 }
 
 /**
- * A class for creating workflow entry points that can be used with Cloudflare Workers
- */
-export class WorkflowEntrypoint extends CFWorkflowEntrypoint {}
-
-/**
  * Represents a scheduled task within an Agent
  * @template T Type of the payload data
  */
