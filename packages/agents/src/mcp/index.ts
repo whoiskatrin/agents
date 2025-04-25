@@ -536,17 +536,32 @@ export abstract class McpAgent<
     const messagePattern = new URLPattern({ pathname: `${pathname}/message` });
 
     return {
-      fetch: async (
+      async fetch<Env>(
         request: Request,
-        env: Record<string, DurableObjectNamespace<McpAgent>>,
+        env: Env,
         ctx: ExecutionContext
-      ): Promise<Response> => {
+      ): Promise<Response> {
         // Handle CORS preflight
         const corsResponse = handleCORS(request, corsOptions);
         if (corsResponse) return corsResponse;
 
         const url = new URL(request.url);
-        const namespace = env[binding];
+        const bindingValue = env[binding as keyof typeof env] as unknown;
+
+        // Ensure we have a binding of some sort
+        if (bindingValue == null || typeof bindingValue !== "object") {
+          console.error(
+            `Could not find McpAgent binding for ${binding}. Did you update your wrangler configuration?`
+          );
+          return new Response("Invalid binding", { status: 500 });
+        }
+
+        // Ensure that the biding is to a DurableObject
+        if (bindingValue.toString() !== "[object DurableObjectNamespace]") {
+          return new Response("Invalid binding", { status: 500 });
+        }
+
+        const namespace = bindingValue as DurableObjectNamespace<McpAgent>;
 
         // Handle initial SSE connection
         if (request.method === "GET" && basePattern.test(url)) {
@@ -746,11 +761,11 @@ export abstract class McpAgent<
     const basePattern = new URLPattern({ pathname });
 
     return {
-      fetch: async (
+      async fetch<Env>(
         request: Request,
-        env: Record<string, DurableObjectNamespace<McpAgent>>,
+        env: Env,
         ctx: ExecutionContext
-      ) => {
+      ): Promise<Response> {
         // Handle CORS preflight
         const corsResponse = handleCORS(request, corsOptions);
         if (corsResponse) {
@@ -758,7 +773,22 @@ export abstract class McpAgent<
         }
 
         const url = new URL(request.url);
-        const namespace = env[binding];
+        const bindingValue = env[binding as keyof typeof env] as unknown;
+
+        // Ensure we have a binding of some sort
+        if (bindingValue == null || typeof bindingValue !== "object") {
+          console.error(
+            `Could not find McpAgent binding for ${binding}. Did you update your wrangler configuration?`
+          );
+          return new Response("Invalid binding", { status: 500 });
+        }
+
+        // Ensure that the biding is to a DurableObject
+        if (bindingValue.toString() !== "[object DurableObjectNamespace]") {
+          return new Response("Invalid binding", { status: 500 });
+        }
+
+        const namespace = bindingValue as DurableObjectNamespace<McpAgent>;
 
         if (request.method === "POST" && basePattern.test(url)) {
           // validate the Accept header
