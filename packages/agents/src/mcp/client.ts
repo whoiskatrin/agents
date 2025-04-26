@@ -207,6 +207,28 @@ export class MCPClientManager {
   }
 
   /**
+   * Closes all connections to MCP servers
+   */
+  async closeAllConnections() {
+    return Promise.all(
+      Object.values(this.mcpConnections).map(async (connection) => {
+        await connection.client.close();
+      })
+    );
+  }
+
+  /**
+   * Closes a connection to an MCP server
+   * @param id The id of the connection to close
+   */
+  async closeConnection(id: string) {
+    if (!this.mcpConnections[id]) {
+      throw new Error(`Connection with id "${id}" does not exist.`);
+    }
+    await this.mcpConnections[id].client.close();
+  }
+
+  /**
    * @returns namespaced list of prompts
    */
   listPrompts(): NamespacedData["prompts"] {
