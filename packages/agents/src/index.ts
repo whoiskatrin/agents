@@ -879,7 +879,7 @@ export async function routeAgentEmail<Env>(
  * @param options Options for Agent creation
  * @returns Promise resolving to an Agent instance stub
  */
-export function getAgentByName<Env, T extends Agent<Env>>(
+export async function getAgentByName<Env, T extends Agent<Env>>(
   namespace: AgentNamespace<T>,
   name: string,
   options?: {
