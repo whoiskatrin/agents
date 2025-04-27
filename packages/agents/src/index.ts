@@ -173,7 +173,7 @@ const agentContext = new AsyncLocalStorage<{
 export function getCurrentAgent<
   T extends Agent<unknown, unknown> = Agent<unknown, unknown>,
 >(): {
-  agent: T;
+  agent: T | undefined;
   connection: Connection | undefined;
   request: Request<unknown, CfProperties<unknown>> | undefined;
 } {
@@ -185,9 +185,11 @@ export function getCurrentAgent<
       }
     | undefined;
   if (!store) {
-    throw new Error(
-      "No agent context found, this means you're trying to access the current agent when none of them are running."
-    );
+    return {
+      agent: undefined,
+      connection: undefined,
+      request: undefined,
+    };
   }
   return store;
 }
