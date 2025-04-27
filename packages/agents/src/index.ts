@@ -173,7 +173,7 @@ const agentContext = new AsyncLocalStorage<{
 export function getCurrentAgent<
   T extends Agent<unknown, unknown> = Agent<unknown, unknown>,
 >(): {
-  agent: T;
+  agent: T | undefined;
   connection: Connection | undefined;
   request: Request<unknown, CfProperties<unknown>> | undefined;
 } {
@@ -186,7 +186,7 @@ export function getCurrentAgent<
     | undefined;
   if (!store) {
     return {
-      agent: undefined as unknown as T, // yes I know this is icky
+      agent: undefined,
       connection: undefined,
       request: undefined,
     };
