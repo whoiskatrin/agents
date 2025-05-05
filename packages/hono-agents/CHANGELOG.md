@@ -1,5 +1,14 @@
 # hono-agents
 
+## 0.0.67
+
+### Patch Changes
+
+- [#249](https://github.com/cloudflare/agents/pull/249) [`c18c28a`](https://github.com/cloudflare/agents/commit/c18c28a253be85e582a71172e074eb97884894e9) Thanks [@dexxiez](https://github.com/dexxiez)! - chore: add top level default types to package.json
+
+- Updated dependencies [[`c18c28a`](https://github.com/cloudflare/agents/commit/c18c28a253be85e582a71172e074eb97884894e9), [`c4d53d7`](https://github.com/cloudflare/agents/commit/c4d53d786da3adf67a658b8a343909ce0f3fb70d), [`96a8138`](https://github.com/cloudflare/agents/commit/96a81383f6b48be0cc854b8cc72f33317824721c)]:
+  - agents@0.0.77
+
 ## 0.0.66
 
 ### Patch Changes

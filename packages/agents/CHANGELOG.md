@@ -1,5 +1,15 @@
 # @cloudflare/agents
 
+## 0.0.77
+
+### Patch Changes
+
+- [#249](https://github.com/cloudflare/agents/pull/249) [`c18c28a`](https://github.com/cloudflare/agents/commit/c18c28a253be85e582a71172e074eb97884894e9) Thanks [@dexxiez](https://github.com/dexxiez)! - chore: add top level default types to package.json
+
+- [#246](https://github.com/cloudflare/agents/pull/246) [`c4d53d7`](https://github.com/cloudflare/agents/commit/c4d53d786da3adf67a658b8a343909ce0f3fb70d) Thanks [@jmorrell-cloudflare](https://github.com/jmorrell-cloudflare)! - Ensure we are passing ctx.props to McpAgent for the Streamable transport
+
+- [#251](https://github.com/cloudflare/agents/pull/251) [`96a8138`](https://github.com/cloudflare/agents/commit/96a81383f6b48be0cc854b8cc72f33317824721c) Thanks [@brettimus](https://github.com/brettimus)! - Ensure isLoading is false after you `stop` an ongoing chat agent request
+
 ## 0.0.76
 
 ### Patch Changes
