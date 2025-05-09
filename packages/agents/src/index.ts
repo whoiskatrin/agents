@@ -396,7 +396,7 @@ export class Agent<Env, State = unknown> extends Server<Env> {
             this.broadcast(
               JSON.stringify({
                 type: "cf_agent_mcp_servers",
-                mcp: this.#getMcpServerStateInternal(),
+                mcp: this._getMcpServerStateInternal(),
               })
             );
 
@@ -508,7 +508,7 @@ export class Agent<Env, State = unknown> extends Server<Env> {
             connection.send(
               JSON.stringify({
                 type: "cf_agent_mcp_servers",
-                mcp: this.#getMcpServerStateInternal(),
+                mcp: this._getMcpServerStateInternal(),
               })
             );
 
@@ -530,7 +530,7 @@ export class Agent<Env, State = unknown> extends Server<Env> {
           // from DO storage, reconnect to all servers using our saved auth information
           await Promise.allSettled(
             servers.map((server) => {
-              return this.#connectToMcpServerInternal(
+              return this._connectToMcpServerInternal(
                 server.name,
                 server.server_url,
                 server.callback_url,
@@ -548,7 +548,7 @@ export class Agent<Env, State = unknown> extends Server<Env> {
           this.broadcast(
             JSON.stringify({
               type: "cf_agent_mcp_servers",
-              mcp: this.#getMcpServerStateInternal(),
+              mcp: this._getMcpServerStateInternal(),
             })
           );
 
@@ -942,7 +942,7 @@ export class Agent<Env, State = unknown> extends Server<Env> {
   ): Promise<{ id: string; authUrl: string | undefined }> {
     const callbackUrl = `${callbackHost}/${agentsPrefix}/${camelCaseToKebabCase(this._ParentClass.name)}/${this.name}/callback`;
 
-    const result = await this.#connectToMcpServerInternal(
+    const result = await this._connectToMcpServerInternal(
       serverName,
       url,
       callbackUrl,
@@ -952,14 +952,14 @@ export class Agent<Env, State = unknown> extends Server<Env> {
     this.broadcast(
       JSON.stringify({
         type: "cf_agent_mcp_servers",
-        mcp: this.#getMcpServerStateInternal(),
+        mcp: this._getMcpServerStateInternal(),
       })
     );
 
     return result;
   }
 
-  async #connectToMcpServerInternal(
+  async _connectToMcpServerInternal(
     serverName: string,
     url: string,
     callbackUrl: string,
@@ -1049,12 +1049,12 @@ export class Agent<Env, State = unknown> extends Server<Env> {
     this.broadcast(
       JSON.stringify({
         type: "cf_agent_mcp_servers",
-        mcp: this.#getMcpServerStateInternal(),
+        mcp: this._getMcpServerStateInternal(),
       })
     );
   }
 
-  #getMcpServerStateInternal(): MCPServersState {
+  private _getMcpServerStateInternal(): MCPServersState {
     const mcpState: MCPServersState = {
       servers: {},
       tools: this.mcp.listTools(),
