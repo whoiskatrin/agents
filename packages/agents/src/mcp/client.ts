@@ -17,6 +17,7 @@ import type { RequestOptions } from "@modelcontextprotocol/sdk/shared/protocol.j
 import type { AgentsOAuthProvider } from "./do-oauth-client-provider";
 import { jsonSchema, type ToolSet } from "ai";
 import { nanoid } from "nanoid";
+import { unstable_getMcpPrompt } from "./client-prompt";
 
 /**
  * Utility class that aggregates multiple MCP clients into one
@@ -300,6 +301,15 @@ export class MCPClientManager {
       params,
       options
     );
+  }
+
+  /**
+   * Utility function to fetch MCP information which you can add to an LLM's system prompt.
+   *
+   * @param includeResources Whether to include resources in the prompt. This may be useful if you include a tool to fetch resources OR if the servers you connect to interact with resources.
+   */
+  unstable_getMcpPrompt(includeResources = true): string {
+    return unstable_getMcpPrompt(this.mcpConnections, includeResources);
   }
 }
 
