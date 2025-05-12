@@ -1,7 +1,7 @@
 import type { PartySocket } from "partysocket";
 import { usePartySocket } from "partysocket/react";
 import { useCallback, useRef } from "react";
-import type { MCPServersState, RPCRequest, RPCResponse } from "./";
+import type { MCPServersState, RPCRequest, RPCResponse, Agent } from "./";
 import type { StreamOptions } from "./client";
 
 /**
@@ -43,14 +43,87 @@ export type UseAgentOptions<State = unknown> = Omit<
   onMcpUpdate?: (mcpServers: MCPServersState) => void;
 };
 
+type Methods<T> = {
+  // biome-ignore lint: suppressions/parse
+  [K in keyof T as T[K] extends (...args: any) => any ? K : never]: T[K];
+};
+
+type OptionalParametersMethod<T> = T extends (
+  arg?: infer R,
+  // biome-ignore lint: suppressions/parse
+  ...rest: any
+  // biome-ignore lint: suppressions/parse
+) => any
+  ? R extends undefined
+    ? never
+    : T
+  : never;
+
+// all methods of the Agent, excluding the ones that are declared in the base Agent class
+// biome-ignore lint: suppressions/parse
+type AgentMethods<T> = Omit<Methods<T>, keyof Agent<any, any>>;
+
+type OptionalAgentMethods<T> = {
+  [K in keyof AgentMethods<T> as T[K] extends OptionalParametersMethod<T[K]>
+    ? K
+    : never]: OptionalParametersMethod<T[K]>;
+};
+
+type RequiredAgentMethods<T> = Omit<
+  AgentMethods<T>,
+  keyof OptionalAgentMethods<T>
+>;
+
+// biome-ignore lint: suppressions/parse
+type AgentPromiseReturnType<T extends AgentMethods<any>, K extends keyof T> =
+  // biome-ignore lint: suppressions/parse
+  ReturnType<T[K]> extends Promise<any>
+    ? ReturnType<T[K]>
+    : Promise<ReturnType<T[K]>>;
+
 /**
  * React hook for connecting to an Agent
  * @template State Type of the Agent's state
+ * @template Agent Type of the Agent
  * @param options Connection options
  * @returns WebSocket connection with setState and call methods
  */
 export function useAgent<State = unknown>(
   options: UseAgentOptions<State>
+): PartySocket & {
+  agent: string;
+  name: string;
+  setState: (state: State) => void;
+  call: <T = unknown>(
+    method: string,
+    args?: unknown[],
+    streamOptions?: StreamOptions
+  ) => Promise<T>;
+};
+export function useAgent<
+  AgentT extends {
+    get state(): State;
+  },
+  State,
+>(
+  options: UseAgentOptions<State>
+): PartySocket & {
+  agent: string;
+  name: string;
+  setState: (state: State) => void;
+  call: (<T extends keyof OptionalAgentMethods<AgentT>>(
+    method: T,
+    args?: Parameters<OptionalAgentMethods<AgentT>[T]>,
+    streamOptions?: StreamOptions
+  ) => AgentPromiseReturnType<AgentT, T>) &
+    (<T extends keyof RequiredAgentMethods<AgentT>>(
+      method: T,
+      args: Parameters<RequiredAgentMethods<AgentT>[T]>,
+      streamOptions?: StreamOptions
+    ) => AgentPromiseReturnType<AgentT, T>);
+};
+export function useAgent<State>(
+  options: UseAgentOptions<unknown>
 ): PartySocket & {
   agent: string;
   name: string;
