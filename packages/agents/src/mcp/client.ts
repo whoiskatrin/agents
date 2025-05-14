@@ -34,8 +34,10 @@ export class MCPClientManager {
   constructor(
     private _name: string,
     private _version: string,
-    public unstable_contextRouter = new BaseContextRouter(),
-  ) {}
+    public unstable_contextRouter: ContextRouter = new BaseContextRouter()
+  ) {
+    this.unstable_contextRouter.clientManager = this;
+  }
 
   /**
    * Connect to and register an MCP server
@@ -204,21 +206,21 @@ export class MCPClientManager {
    * @returns namespaced list of tools
    */
   listTools(): NamespacedData["tools"] {
-    return this.unstable_contextRouter.listTools(this)
+    return this.unstable_contextRouter.listTools();
   }
 
   /**
    * @returns a set of tools that you can use with the AI SDK
    */
   unstable_getAITools(): ToolSet {
-    return this.unstable_contextRouter.getAITools(this)
+    return this.unstable_contextRouter.getAITools();
   }
 
   /**
    * @returns namespaced list of tools
    */
   listResources(): NamespacedData["resources"] {
-    return this.unstable_contextRouter.listResources(this);
+    return this.unstable_contextRouter.listResources();
   }
 
   /**
@@ -288,7 +290,7 @@ export class MCPClientManager {
    * @param includeResources Whether to include resources in the prompt. This may be useful if you include a tool to fetch resources OR if the servers you connect to interact with resources.
    */
   unstable_systemPrompt(): string {
-    return this.unstable_contextRouter.systemPrompt(this)
+    return this.unstable_contextRouter.systemPrompt();
   }
 }
 
