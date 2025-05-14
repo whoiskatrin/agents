@@ -17,7 +17,7 @@ import type { RequestOptions } from "@modelcontextprotocol/sdk/shared/protocol.j
 import type { AgentsOAuthProvider } from "./do-oauth-client-provider";
 import { jsonSchema, type ToolSet } from "ai";
 import { nanoid } from "nanoid";
-import { unstable_getMcpPrompt } from "./client-prompt";
+import { BaseContextRouter, type ContextRouter } from "./context-router";
 
 /**
  * Utility class that aggregates multiple MCP clients into one
@@ -33,7 +33,8 @@ export class MCPClientManager {
    */
   constructor(
     private _name: string,
-    private _version: string
+    private _version: string,
+    public unstable_contextRouter = new BaseContextRouter(),
   ) {}
 
   /**
@@ -178,42 +179,6 @@ export class MCPClientManager {
   }
 
   /**
-   * @returns namespaced list of tools
-   */
-  listTools(): NamespacedData["tools"] {
-    return getNamespacedData(this.mcpConnections, "tools");
-  }
-
-  /**
-   * @returns a set of tools that you can use with the AI SDK
-   */
-  unstable_getAITools(): ToolSet {
-    return Object.fromEntries(
-      getNamespacedData(this.mcpConnections, "tools").map((tool) => {
-        return [
-          `${tool.serverId}_${tool.name}`,
-          {
-            parameters: jsonSchema(tool.inputSchema),
-            description: tool.description,
-            execute: async (args) => {
-              const result = await this.callTool({
-                name: tool.name,
-                arguments: args,
-                serverId: tool.serverId,
-              });
-              if (result.isError) {
-                // @ts-expect-error TODO we should fix this
-                throw new Error(result.content[0].text);
-              }
-              return result;
-            },
-          },
-        ];
-      })
-    );
-  }
-
-  /**
    * Closes all connections to MCP servers
    */
   async closeAllConnections() {
@@ -236,17 +201,31 @@ export class MCPClientManager {
   }
 
   /**
-   * @returns namespaced list of prompts
+   * @returns namespaced list of tools
    */
-  listPrompts(): NamespacedData["prompts"] {
-    return getNamespacedData(this.mcpConnections, "prompts");
+  listTools(): NamespacedData["tools"] {
+    return this.unstable_contextRouter.listTools(this)
+  }
+
+  /**
+   * @returns a set of tools that you can use with the AI SDK
+   */
+  unstable_getAITools(): ToolSet {
+    return this.unstable_contextRouter.getAITools(this)
   }
 
   /**
    * @returns namespaced list of tools
    */
   listResources(): NamespacedData["resources"] {
-    return getNamespacedData(this.mcpConnections, "resources");
+    return this.unstable_contextRouter.listResources(this);
+  }
+
+  /**
+   * @returns namespaced list of prompts
+   */
+  listPrompts(): NamespacedData["prompts"] {
+    return getNamespacedData(this.mcpConnections, "prompts");
   }
 
   /**
@@ -308,12 +287,12 @@ export class MCPClientManager {
    *
    * @param includeResources Whether to include resources in the prompt. This may be useful if you include a tool to fetch resources OR if the servers you connect to interact with resources.
    */
-  unstable_getMcpPrompt(includeResources = true): string {
-    return unstable_getMcpPrompt(this.mcpConnections, includeResources);
+  unstable_systemPrompt(): string {
+    return this.unstable_contextRouter.systemPrompt(this)
   }
 }
 
-type NamespacedData = {
+export type NamespacedData = {
   tools: (Tool & { serverId: string })[];
   prompts: (Prompt & { serverId: string })[];
   resources: (Resource & { serverId: string })[];
