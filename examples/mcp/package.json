@@ -8,9 +8,9 @@
   "keywords": [],
   "author": "",
   "dependencies": {
-    "mcp-remote": "^0.1.4"
+    "mcp-remote": "^0.1.5"
   },
   "devDependencies": {
-    "@modelcontextprotocol/sdk": "^1.11.2"
+    "@modelcontextprotocol/sdk": "^1.11.3"
   }
 }
