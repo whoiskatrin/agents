@@ -42,11 +42,15 @@ This project is actively evolving. Current focus areas:
 ## Getting Started
 
 ### Quick Start
+
 - Create a new project
+
 ```bash
 npm create cloudflare@latest -- --template cloudflare/agents-starter
 ```
+
 - Or add to existing project
+
 ```bash
 
 npm install agents
