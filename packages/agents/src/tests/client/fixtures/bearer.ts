@@ -1,4 +1,4 @@
-import { McpAgent } from "../mcp/index.ts";
+import { McpAgent } from "../../../mcp/index.ts";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import type { CallToolResult } from "@modelcontextprotocol/sdk/types.js";
 import { z } from "zod";
@@ -44,6 +44,10 @@ export class TestMcpAgent extends McpAgent<Env, State, Props> {
 export default {
   fetch(request: Request, env: Env, ctx: ExecutionContext) {
     const url = new URL(request.url);
+
+    if (request.headers.get("Authorization") !== "Bearer foo-bar") {
+      return new Response("Unauthorized", { status: 401 })
+    }
 
     // set some props that should be passed init
     ctx.props = {
