@@ -12,12 +12,14 @@ export interface AgentsOAuthProvider extends OAuthClientProvider {
   authUrl: string | undefined;
   clientId: string | undefined;
   serverId: string | undefined;
+  codeChallenge: string | undefined;
 }
 
 export class DurableObjectOAuthClientProvider implements AgentsOAuthProvider {
   private _authUrl_: string | undefined;
   private _serverId_: string | undefined;
   private _clientId_: string | undefined;
+  private _codeChallenge_: string | undefined;
 
   constructor(
     public storage: DurableObjectStorage,
@@ -118,30 +120,66 @@ export class DurableObjectOAuthClientProvider implements AgentsOAuthProvider {
    * and require user interact to initiate the redirect flow
    */
   async redirectToAuthorization(authUrl: URL): Promise<void> {
-    // We want to track the client ID in state here because the typescript SSE client sometimes does
-    // a dynamic client registration AFTER generating this redirect URL.
+    // We want to track the client ID & code challenge in state here because the typescript SSE client sometimes does
+    // a dynamic client registration AFTER generating this redirect URL. This prevents us from:
+    // 1) using the wrong client information
+    // 2) using the wrong PKCE code challenge
     const client_id = authUrl.searchParams.get("client_id");
-    if (client_id) {
-      authUrl.searchParams.append("state", client_id);
+    const code_challenge = authUrl.searchParams.get("code_challenge");
+    if (client_id && code_challenge) {
+      this.codeChallenge = code_challenge;
+      authUrl.searchParams.append("state", `${client_id}:${code_challenge}`);
     }
     this._authUrl_ = authUrl.toString();
   }
 
-  codeVerifierKey(clientId: string) {
-    return `${this.keyPrefix(clientId)}/code_verifier`;
+  get codeChallenge() {
+    if (!this._codeChallenge_) {
+      throw new Error("Trying to access codeChallenge before it was set");
+    }
+    return this._codeChallenge_;
+  }
+
+  set codeChallenge(codeChallenge_: string) {
+    this._codeChallenge_ = codeChallenge_;
+  }
+
+  codeVerifierKey(clientId: string, codeChallenge: string) {
+    return `${this.keyPrefix(clientId)}/code_verifier/${codeChallenge}`;
   }
 
   async saveCodeVerifier(verifier: string): Promise<void> {
-    await this.storage.put(this.codeVerifierKey(this.clientId), verifier);
+    this.codeChallenge = await getCodeChallenge(verifier);
+    await this.storage.put(this.codeVerifierKey(this.clientId, this.codeChallenge), verifier);
   }
 
   async codeVerifier(): Promise<string> {
     const codeVerifier = await this.storage.get<string>(
-      this.codeVerifierKey(this.clientId)
+      this.codeVerifierKey(this.clientId, this.codeChallenge)
     );
     if (!codeVerifier) {
       throw new Error("No code verifier found");
     }
     return codeVerifier;
   }
+}
+
+async function getCodeChallenge(codeVerifier: string) {
+  const buffer = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(codeVerifier))
+	const hash = new Uint8Array(buffer)
+	let binary = ''
+	const hashLength = hash.byteLength
+	for (let i = 0; i < hashLength; i++) {
+		binary += String.fromCharCode(hash[i])
+	}
+	const codeChallenge = base64urlEncode(binary)
+  return codeChallenge
+}
+
+function base64urlEncode(value: string): string {
+	let base64 = btoa(value)
+	base64 = base64.replace(/\+/g, '-')
+	base64 = base64.replace(/\//g, '_')
+	base64 = base64.replace(/=/g, '')
+	return base64
 }
