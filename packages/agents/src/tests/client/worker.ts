@@ -15,7 +15,7 @@ export class McpClient extends Agent<Env, never> {
   mcp = new MCPClientManager("my-agent", "1.0.0");
 
   resetInMemoryMcp() {
-    this.mcp = new MCPClientManager("my-agent", "1.0.0")
+    this.mcp = new MCPClientManager("my-agent", "1.0.0");
   }
 }
 

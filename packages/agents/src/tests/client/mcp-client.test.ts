@@ -125,7 +125,7 @@ describe("McpClient Agent", () => {
   });
 
   it("connects to oauth authenticated SSE server after interruption - auth_url pre-disconnect", async () => {
-    let { agent } = getAgent();
+    const { agent } = getAgent();
     await agent.addMcpServer(
       "oauth",
       "http://localhost:8790/sse",
@@ -142,7 +142,7 @@ describe("McpClient Agent", () => {
     await agent.connectMCPServers();
 
     // Go to server /authorize URL
-    console.log("authing TO", pendingAuth.auth_url)
+    console.log("authing TO", pendingAuth.auth_url);
     expect(pendingAuth.auth_url).toBeTruthy();
     const authorizeReq = await fetch(pendingAuth.auth_url!, {
       redirect: "manual",
@@ -166,7 +166,7 @@ describe("McpClient Agent", () => {
   });
 
   it("connects to oauth authenticated SSE server after interruption - auth_url post-disconnect", async () => {
-    let { agent } = getAgent();
+    const { agent } = getAgent();
     await agent.addMcpServer(
       "oauth",
       "http://localhost:8790/sse",
@@ -185,11 +185,13 @@ describe("McpClient Agent", () => {
     const mcpsPostDisconnect: MCPServersState = await agent.getMcpServers();
     expect(Object.entries(mcpsPostDisconnect.servers)).toHaveLength(1);
     expect(mcpsPostDisconnect.tools).toHaveLength(0);
-    const pendingAuthPostDisconnect = Object.values(mcpsPostDisconnect.servers)[0];
+    const pendingAuthPostDisconnect = Object.values(
+      mcpsPostDisconnect.servers
+    )[0];
     expect(pendingAuthPostDisconnect.state).toBe("authenticating");
 
     // Go to server /authorize URL
-    console.log("authing TO", pendingAuthPostDisconnect.auth_url)
+    console.log("authing TO", pendingAuthPostDisconnect.auth_url);
     expect(pendingAuthPostDisconnect.auth_url).toBeTruthy();
     const authorizeReq = await fetch(pendingAuthPostDisconnect.auth_url!, {
       redirect: "manual",

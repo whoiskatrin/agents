@@ -46,7 +46,7 @@ export default {
     const url = new URL(request.url);
 
     if (request.headers.get("Authorization") !== "Bearer foo-bar") {
-      return new Response("Unauthorized", { status: 401 })
+      return new Response("Unauthorized", { status: 401 });
     }
 
     // set some props that should be passed init
