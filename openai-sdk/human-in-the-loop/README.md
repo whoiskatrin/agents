@@ -58,7 +58,7 @@ The agent is configured with a weather lookup tool that requires approval for qu
 
 ## Usage
 
-1. **Ask about weather**: Type questions like "What's the weather in Oakland and San Francisco?"
+1. **Ask about weather**: Type questions like "What's the weather in San Francisco?"
 2. **Handle approvals**: When the modal appears, review the tool call details and approve/reject
 3. **View results**: See the agent's final response after all approvals are handled
 
