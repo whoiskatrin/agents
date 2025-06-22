@@ -4,67 +4,6 @@ import { useEffect, useState } from "react";
 import { createRoot } from "react-dom/client";
 import "./styles.css";
 
-// const sampleData = {
-//   history: [
-//     {
-//       itemId: "item_Bktz3NIfNof0qkoHp4vsQ",
-//       previousItemId: null,
-//       type: "message",
-//       role: "user",
-//       status: "completed",
-//       content: [
-//         {
-//           type: "input_audio",
-//           audio: null,
-//           transcript: "Hello.",
-//         },
-//       ],
-//     },
-//     {
-//       itemId: "item_Bktz5c8OSh4FnzIP4lqMy",
-//       type: "message",
-//       role: "assistant",
-//       status: "in_progress",
-//       content: [
-//         {
-//           type: "audio",
-//           transcript:
-//             "Hey there! How's it going? What can I help you with today?",
-//           audio: null,
-//         },
-//       ],
-//     },
-//     {
-//       itemId: "item_BktzC9GIiuC5FPzbAdXh6",
-//       previousItemId: null,
-//       type: "message",
-//       role: "user",
-//       status: "completed",
-//       content: [
-//         {
-//           type: "input_audio",
-//           audio: null,
-//           transcript: "Just checking what's up with you.",
-//         },
-//       ],
-//     },
-//     {
-//       itemId: "item_BktzFvEsntbZu6h1xsxCM",
-//       type: "message",
-//       role: "assistant",
-//       status: "in_progress",
-//       content: [
-//         {
-//           type: "audio",
-//           transcript:
-//             "I'm here and ready to assist with any questions or tasks you have. Feel free to ask away or let me know what you're curious about.",
-//           audio: null,
-//         },
-//       ],
-//     },
-//   ],
-// };
-
 interface Message {
   itemId: string;
   type: string;
