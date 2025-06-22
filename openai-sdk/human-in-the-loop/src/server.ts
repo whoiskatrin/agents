@@ -94,8 +94,7 @@ export class MyAgent extends CFAgent<Env, AgentState> {
     console.log(
       `[MyAgent] proceed method called with id: ${id}, approval: ${approval}`
     );
-    // TODO: Implement approval handling
-    console.log("[MyAgent] proceed method not yet implemented");
+
     const runState = await RunState.fromString(
       this.agent,
       this.state.serialisedRunState!
