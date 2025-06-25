@@ -4,7 +4,7 @@
     "mcp-remote": "^0.1.16"
   },
   "devDependencies": {
-    "@modelcontextprotocol/sdk": "^1.13.0"
+    "@modelcontextprotocol/sdk": "^1.13.1"
   },
   "keywords": [],
   "name": "@cloudflare/agents-mcp-example",

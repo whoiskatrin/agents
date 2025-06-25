@@ -1,7 +1,7 @@
 {
   "author": "",
   "dependencies": {
-    "@modelcontextprotocol/sdk": "^1.13.0",
+    "@modelcontextprotocol/sdk": "^1.13.1",
     "nanoid": "^5.1.5"
   },
   "keywords": [],
