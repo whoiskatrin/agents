@@ -12,10 +12,29 @@ export default function Email({ addToast }: EmailProps) {
   const agent = useAgent({
     agent: "email-agent",
   });
-  const { messages, input, handleInputChange, handleSubmit, clearHistory } =
-    useAgentChat({
-      agent,
+  const { messages, clearHistory, sendMessage } = useAgentChat({
+    agent,
+  });
+
+  const [chatInput, setChatInput] = useState("");
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setChatInput(e.target.value);
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!chatInput.trim()) return;
+
+    const message = chatInput;
+    setChatInput("");
+
+    // Send message to agent
+    await sendMessage({
+      role: "user",
+      parts: [{ type: "text", text: message }],
     });
+  };
 
   const [emails, setEmails] = useState<PostalEmail[]>([
     {
@@ -169,10 +188,14 @@ export default function Email({ addToast }: EmailProps) {
                     : "user-message"
                 }`}
               >
-                <div className="message-content">{message.content}</div>
-                <div className="message-time">
-                  {formatTime(new Date(message.createdAt as unknown as string))}
+                <div className="message-content">
+                  {message.parts
+                    .filter((part) => part.type === "text")
+                    .map((part, index) => (
+                      <span key={index}>{part.text}</span>
+                    ))}
                 </div>
+                <div className="message-time">{formatTime(new Date())}</div>
               </div>
             ))}
           </div>
@@ -180,7 +203,7 @@ export default function Email({ addToast }: EmailProps) {
           <form onSubmit={sendChatMessage} className="input-form">
             <input
               type="text"
-              value={input}
+              value={chatInput}
               onChange={handleInputChange}
               placeholder={
                 isChatDisabled ? "Chat is disabled" : "Type a message..."
@@ -190,7 +213,7 @@ export default function Email({ addToast }: EmailProps) {
             />
             <button
               type="submit"
-              disabled={isChatDisabled || !input.trim()}
+              disabled={isChatDisabled || !chatInput.trim()}
               className="send-button"
             >
               Send
@@ -225,7 +248,9 @@ export default function Email({ addToast }: EmailProps) {
                 // biome-ignore lint/suspicious/noArrayIndexKey: vibes
                 key={index}
                 className={`email-item ${
-                  email.from?.address === "agent" ? "agent-email" : "user-email"
+                  email.from?.address === "agent@example.com"
+                    ? "agent-email"
+                    : "user-email"
                 }`}
               >
                 <div className="email-header">

@@ -1,7 +1,6 @@
 import { getAgentByName } from "agents";
 import { AIChatAgent } from "agents/ai-chat-agent";
-import type { StreamTextOnFinishCallback } from "ai";
-import { createDataStreamResponse, streamText } from "ai";
+import { convertToCoreMessages, streamText } from "ai";
 
 import { createMimeMessage } from "mimetext";
 // import PostalMime from "postal-mime";
@@ -102,56 +101,49 @@ export class EmailAgent extends AIChatAgent<Env> {
     //
   }
 
-  async onChatMessage(onFinish: StreamTextOnFinishCallback<{}>) {
-    const dataStreamResponse = createDataStreamResponse({
-      execute: async (dataStream) => {
-        const result = streamText({
-          messages: this.messages,
-          model,
-          onFinish,
-          onStepFinish: async (step) => {
-            // if ([...this.getConnections()].length === 0) {
+  async onChatMessage() {
+    const result = await streamText({
+      messages: convertToCoreMessages(this.messages),
+      model,
+      onStepFinish: async (step) => {
+        // if ([...this.getConnections()].length === 0) {
 
-            // biome-ignore lint/correctness/noConstantCondition: work in progress
-            if (true) {
-              // send an email instead
-              try {
-                console.log("sending email", step.text);
-                // we would replace this with a send_email call
-                const mockEmail = await getAgentByName(
-                  this.env.MockEmailService,
-                  "default"
-                );
-                const emailToSend = await createMockEmail({
-                  body: step.text,
-                  contentType: "text/plain",
-                  from: "emailAgent@example.com",
-                  id: this.ctx.id.toString(),
-                  name: "emailAgent",
-                  subject: "Email from emailAgent",
-                  to: "theman@example.com",
-                });
-                mockEmail
-                  .toInbox({
-                    from: emailToSend.from,
-                    message: emailToSend.message,
-                    to: emailToSend.to,
-                  })
-                  .catch((e) => {
-                    console.error("error sending email", e);
-                  });
-              } catch (e) {
+        // biome-ignore lint/correctness/noConstantCondition: work in progress
+        if (true) {
+          // send an email instead
+          try {
+            console.log("sending email", step.text);
+            // we would replace this with a send_email call
+            const mockEmail = await getAgentByName(
+              this.env.MockEmailService,
+              "default"
+            );
+            const emailToSend = await createMockEmail({
+              body: step.text,
+              contentType: "text/plain",
+              from: "emailAgent@example.com",
+              id: this.ctx.id.toString(),
+              name: "emailAgent",
+              subject: "Email from emailAgent",
+              to: "theman@example.com",
+            });
+            mockEmail
+              .toInbox({
+                from: emailToSend.from,
+                message: emailToSend.message,
+                to: emailToSend.to,
+              })
+              .catch((e) => {
                 console.error("error sending email", e);
-              }
-            }
-          },
-        });
-
-        result.mergeIntoDataStream(dataStream);
+              });
+          } catch (e) {
+            console.error("error sending email", e);
+          }
+        }
       },
     });
 
-    return dataStreamResponse;
+    return result.toTextStreamResponse();
   }
 }
 
