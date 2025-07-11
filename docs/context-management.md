@@ -144,24 +144,3 @@ export class MyAgent extends AIChatAgent {
   }
 }
 ```
-
-**That's it!** No decorators, no manual wrapping needed - everything else is automatic.
-
-### How It Works Under the Hood
-
-When you extend `AIChatAgent` or `Agent`, the framework automatically:
-
-1. **Identifies your custom methods** during initialization
-2. **Wraps them with context** so `getCurrentAgent()` works
-3. **Skips built-in framework methods** that already have context
-4. **Ignores private methods** (starting with `_`) by design
-
-This happens once at startup with minimal performance impact.
-
-## Troubleshooting
-
-### If getCurrentAgent() Still Returns Undefined
-
-1. **Check if it's a built-in method**: Built-in methods already have context
-2. **Verify method naming**: Methods starting with `_` are considered private and not wrapped
-3. **Ensure proper inheritance**: Make sure your class extends `AIChatAgent` or `Agent`
