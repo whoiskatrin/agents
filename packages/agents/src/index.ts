@@ -6,7 +6,7 @@ import type {
   Prompt,
   Resource,
   ServerCapabilities,
-  Tool,
+  Tool
 } from "@modelcontextprotocol/sdk/types.js";
 import { parseCronExpression } from "cron-schedule";
 import { nanoid } from "nanoid";
@@ -17,7 +17,7 @@ import {
   type PartyServerOptions,
   routePartykitRequest,
   Server,
-  type WSMessage,
+  type WSMessage
 } from "partyserver";
 import { camelCaseToKebabCase } from "./client";
 import { MCPClientManager } from "./mcp/client";
@@ -224,7 +224,7 @@ const agentContext = new AsyncLocalStorage<{
 }>();
 
 export function getCurrentAgent<
-  T extends Agent<unknown, unknown> = Agent<unknown, unknown>,
+  T extends Agent<unknown, unknown> = Agent<unknown, unknown>
 >(): {
   agent: T | undefined;
   connection: Connection | undefined;
@@ -241,7 +241,7 @@ export function getCurrentAgent<
     return {
       agent: undefined,
       connection: undefined,
-      request: undefined,
+      request: undefined
     };
   }
   return store;
@@ -314,7 +314,7 @@ export class Agent<Env, State = unknown> extends Server<Env> {
    */
   static options = {
     /** Whether the Agent should hibernate when inactive */
-    hibernate: true, // default to hibernate
+    hibernate: true // default to hibernate
   };
 
   /**
@@ -403,14 +403,14 @@ export class Agent<Env, State = unknown> extends Server<Env> {
             this.broadcast(
               JSON.stringify({
                 mcp: this.getMcpServers(),
-                type: "cf_agent_mcp_servers",
+                type: "cf_agent_mcp_servers"
               })
             );
 
             // We probably should let the user configure this response/redirect, but this is fine for now.
             return new Response("<script>window.close();</script>", {
               headers: { "content-type": "text/html" },
-              status: 200,
+              status: 200
             });
           }
 
@@ -475,10 +475,10 @@ export class Agent<Env, State = unknown> extends Server<Env> {
                     args,
                     method,
                     streaming: metadata?.streaming,
-                    success: true,
+                    success: true
                   },
                   timestamp: Date.now(),
-                  type: "rpc",
+                  type: "rpc"
                 },
                 this.ctx
               );
@@ -488,7 +488,7 @@ export class Agent<Env, State = unknown> extends Server<Env> {
                 id,
                 result,
                 success: true,
-                type: "rpc",
+                type: "rpc"
               };
               connection.send(JSON.stringify(response));
             } catch (e) {
@@ -498,7 +498,7 @@ export class Agent<Env, State = unknown> extends Server<Env> {
                   e instanceof Error ? e.message : "Unknown error occurred",
                 id: parsed.id,
                 success: false,
-                type: "rpc",
+                type: "rpc"
               };
               connection.send(JSON.stringify(response));
               console.error("RPC error:", e);
@@ -523,7 +523,7 @@ export class Agent<Env, State = unknown> extends Server<Env> {
               connection.send(
                 JSON.stringify({
                   state: this.state,
-                  type: "cf_agent_state",
+                  type: "cf_agent_state"
                 })
               );
             }
@@ -531,7 +531,7 @@ export class Agent<Env, State = unknown> extends Server<Env> {
             connection.send(
               JSON.stringify({
                 mcp: this.getMcpServers(),
-                type: "cf_agent_mcp_servers",
+                type: "cf_agent_mcp_servers"
               })
             );
 
@@ -540,10 +540,10 @@ export class Agent<Env, State = unknown> extends Server<Env> {
                 displayMessage: "Connection established",
                 id: nanoid(),
                 payload: {
-                  connectionId: connection.id,
+                  connectionId: connection.id
                 },
                 timestamp: Date.now(),
-                type: "connect",
+                type: "connect"
               },
               this.ctx
             );
@@ -574,7 +574,7 @@ export class Agent<Env, State = unknown> extends Server<Env> {
                   : undefined,
                 {
                   id: server.id,
-                  oauthClientId: server.client_id ?? undefined,
+                  oauthClientId: server.client_id ?? undefined
                 }
               );
             })
@@ -582,7 +582,7 @@ export class Agent<Env, State = unknown> extends Server<Env> {
             this.broadcast(
               JSON.stringify({
                 mcp: this.getMcpServers(),
-                type: "cf_agent_mcp_servers",
+                type: "cf_agent_mcp_servers"
               })
             );
           });
@@ -609,7 +609,7 @@ export class Agent<Env, State = unknown> extends Server<Env> {
     this.broadcast(
       JSON.stringify({
         state: state,
-        type: "cf_agent_state",
+        type: "cf_agent_state"
       }),
       source !== "server" ? [source.id] : []
     );
@@ -624,10 +624,10 @@ export class Agent<Env, State = unknown> extends Server<Env> {
               id: nanoid(),
               payload: {
                 previousState,
-                state,
+                state
               },
               timestamp: Date.now(),
-              type: "state:update",
+              type: "state:update"
             },
             this.ctx
           );
@@ -733,7 +733,7 @@ export class Agent<Env, State = unknown> extends Server<Env> {
           id: nanoid(),
           payload: schedule,
           timestamp: Date.now(),
-          type: "schedule:create",
+          type: "schedule:create"
         },
         this.ctx
       );
@@ -762,7 +762,7 @@ export class Agent<Env, State = unknown> extends Server<Env> {
         id,
         payload: payload as T,
         time: timestamp,
-        type: "scheduled",
+        type: "scheduled"
       };
 
       emitScheduleCreate(schedule);
@@ -788,7 +788,7 @@ export class Agent<Env, State = unknown> extends Server<Env> {
         id,
         payload: payload as T,
         time: timestamp,
-        type: "delayed",
+        type: "delayed"
       };
 
       emitScheduleCreate(schedule);
@@ -814,7 +814,7 @@ export class Agent<Env, State = unknown> extends Server<Env> {
         id,
         payload: payload as T,
         time: timestamp,
-        type: "cron",
+        type: "cron"
       };
 
       emitScheduleCreate(schedule);
@@ -883,7 +883,7 @@ export class Agent<Env, State = unknown> extends Server<Env> {
       .toArray()
       .map((row) => ({
         ...row,
-        payload: JSON.parse(row.payload as string) as T,
+        payload: JSON.parse(row.payload as string) as T
       })) as Schedule<T>[];
 
     return result;
@@ -903,7 +903,7 @@ export class Agent<Env, State = unknown> extends Server<Env> {
           id: nanoid(),
           payload: schedule,
           timestamp: Date.now(),
-          type: "schedule:cancel",
+          type: "schedule:cancel"
         },
         this.ctx
       );
@@ -962,7 +962,7 @@ export class Agent<Env, State = unknown> extends Server<Env> {
                 id: nanoid(),
                 payload: row,
                 timestamp: Date.now(),
-                type: "schedule:execute",
+                type: "schedule:execute"
               },
               this.ctx
             );
@@ -1018,7 +1018,7 @@ export class Agent<Env, State = unknown> extends Server<Env> {
         id: nanoid(),
         payload: {},
         timestamp: Date.now(),
-        type: "destroy",
+        type: "destroy"
       },
       this.ctx
     );
@@ -1078,7 +1078,7 @@ export class Agent<Env, State = unknown> extends Server<Env> {
     this.broadcast(
       JSON.stringify({
         mcp: this.getMcpServers(),
-        type: "cf_agent_mcp_servers",
+        type: "cf_agent_mcp_servers"
       })
     );
 
@@ -1134,12 +1134,12 @@ export class Agent<Env, State = unknown> extends Server<Env> {
           fetch: (url, init) =>
             fetch(url, {
               ...init,
-              headers: options?.transport?.headers,
-            }),
+              headers: options?.transport?.headers
+            })
         },
         requestInit: {
-          headers: options?.transport?.headers,
-        },
+          headers: options?.transport?.headers
+        }
       };
     }
 
@@ -1148,14 +1148,14 @@ export class Agent<Env, State = unknown> extends Server<Env> {
       reconnect,
       transport: {
         ...headerTransportOpts,
-        authProvider,
-      },
+        authProvider
+      }
     });
 
     return {
       authUrl,
       clientId,
-      id,
+      id
     };
   }
 
@@ -1167,7 +1167,7 @@ export class Agent<Env, State = unknown> extends Server<Env> {
     this.broadcast(
       JSON.stringify({
         mcp: this.getMcpServers(),
-        type: "cf_agent_mcp_servers",
+        type: "cf_agent_mcp_servers"
       })
     );
   }
@@ -1177,7 +1177,7 @@ export class Agent<Env, State = unknown> extends Server<Env> {
       prompts: this.mcp.listPrompts(),
       resources: this.mcp.listResources(),
       servers: {},
-      tools: this.mcp.listTools(),
+      tools: this.mcp.listTools()
     };
 
     const servers = this.sql<MCPServerRow>`
@@ -1193,7 +1193,7 @@ export class Agent<Env, State = unknown> extends Server<Env> {
         name: server.name,
         server_url: server.server_url,
         // mark as "authenticating" because the server isn't automatically connected, so it's pending authenticating
-        state: serverConn?.connectionState ?? "authenticating",
+        state: serverConn?.connectionState ?? "authenticating"
       };
     }
 
@@ -1241,14 +1241,14 @@ export async function routeAgentRequest<Env>(
           "Access-Control-Allow-Credentials": "true",
           "Access-Control-Allow-Methods": "GET, POST, HEAD, OPTIONS",
           "Access-Control-Allow-Origin": "*",
-          "Access-Control-Max-Age": "86400",
+          "Access-Control-Max-Age": "86400"
         }
       : options?.cors;
 
   if (request.method === "OPTIONS") {
     if (corsHeaders) {
       return new Response(null, {
-        headers: corsHeaders,
+        headers: corsHeaders
       });
     }
     console.warn(
@@ -1261,7 +1261,7 @@ export async function routeAgentRequest<Env>(
     env as Record<string, unknown>,
     {
       prefix: "agents",
-      ...(options as PartyServerOptions<Record<string, unknown>>),
+      ...(options as PartyServerOptions<Record<string, unknown>>)
     }
   );
 
@@ -1274,8 +1274,8 @@ export async function routeAgentRequest<Env>(
     response = new Response(response.body, {
       headers: {
         ...response.headers,
-        ...corsHeaders,
-      },
+        ...corsHeaders
+      }
     });
   }
   return response;
@@ -1339,7 +1339,7 @@ export class StreamingResponse {
       id: this._id,
       result: chunk,
       success: true,
-      type: "rpc",
+      type: "rpc"
     };
     this._connection.send(JSON.stringify(response));
   }
@@ -1358,7 +1358,7 @@ export class StreamingResponse {
       id: this._id,
       result: finalChunk,
       success: true,
-      type: "rpc",
+      type: "rpc"
     };
     this._connection.send(JSON.stringify(response));
   }

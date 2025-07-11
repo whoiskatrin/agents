@@ -611,7 +611,7 @@
     initialState = {
       counter: 0,
       text: "",
-      color: "#3B82F6",
+      color: "#3B82F6"
     };
 
     doSomething() {
@@ -628,7 +628,7 @@
     agent: "my-agent",
     onStateUpdate: (state) => {
       setState(state);
-    },
+    }
   });
   ```
 

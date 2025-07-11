@@ -30,7 +30,7 @@
     "@biomejs/biome": "2.0.6",
     "@changesets/changelog-github": "^0.5.1",
     "@changesets/cli": "^2.29.5",
-    "@cloudflare/vite-plugin": "1.8.0",
+    "@cloudflare/vite-plugin": "^1.9.4",
     "@cloudflare/vitest-pool-workers": "^0.8.48",
     "@cloudflare/workers-types": "^4.20250702.0",
     "@openai/agents": "^0.0.10",
@@ -62,7 +62,7 @@
     "vitest": "3.2.4",
     "vitest-browser-react": "^1.0.0",
     "workers-ai-provider": "^0.7.0",
-    "wrangler": "^4.22.0",
+    "wrangler": "^4.24.3",
     "zod": "^3.25.67"
   },
   "workspaces": [

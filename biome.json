@@ -3,7 +3,8 @@
   "assist": {
     "actions": {
       "source": {
-        "useSortedKeys": "on"
+        "useSortedKeys": "off",
+        "organizeImports": "off"
       }
     },
     "enabled": true
@@ -50,7 +51,7 @@
         "noNonNullAssertion": "off",
         "noParameterAssign": "error",
         "noUnusedTemplateLiteral": "error",
-        "noUselessElse": "error",
+        "noUselessElse": "off",
         "useAsConstAssertion": "error",
         "useDefaultParameterLast": "error",
         "useEnumInitializers": "error",
