@@ -2,6 +2,8 @@ import { defineWorkersConfig } from "@cloudflare/vitest-pool-workers/config";
 
 export default defineWorkersConfig({
   test: {
+    setupFiles: ["./test-setup.ts"],
+    globals: true,
     deps: {
       optimizer: {
         ssr: {
