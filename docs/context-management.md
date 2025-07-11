@@ -25,6 +25,7 @@ export class MyAgent extends AIChatAgent {
 ```
 
 **Zero configuration required!** The framework automatically:
+
 1. Scans your agent class for custom methods
 2. Wraps them with agent context during initialization
 3. Ensures `getCurrentAgent()` works in all external functions called from your methods
@@ -33,16 +34,16 @@ export class MyAgent extends AIChatAgent {
 
 ```typescript
 import { AIChatAgent, getCurrentAgent } from "agents";
-import { generateText } from 'ai';
-import { openai } from '@ai-sdk/openai';
+import { generateText } from "ai";
+import { openai } from "@ai-sdk/openai";
 
 // External utility function that needs agent context
 async function processWithAI(prompt: string) {
   const { agent } = getCurrentAgent<MyAgent>();
   // ✅ External functions can access the current agent!
-  
+
   return await generateText({
-    model: openai('gpt-4'),
+    model: openai("gpt-4"),
     prompt: `Agent ${agent?.name}: ${prompt}`,
   });
 }
@@ -50,9 +51,9 @@ async function processWithAI(prompt: string) {
 export class MyAgent extends AIChatAgent {
   async customMethod(message: string) {
     // Use this.* to access agent properties directly
-    console.log('Agent name:', this.name);
-    console.log('Agent state:', this.state);
-    
+    console.log("Agent name:", this.name);
+    console.log("Agent state:", this.state);
+
     // External functions automatically work!
     const result = await processWithAI(message);
     return result.text;
@@ -70,7 +71,7 @@ export class MyAgent extends AIChatAgent {
 
 ```typescript
 // When you call a custom method:
-agent.customMethod() 
+agent.customMethod()
   → automatically wrapped with agentContext.run()
   → your method executes with full context
   → external functions can use getCurrentAgent()
@@ -85,13 +86,13 @@ export class MyAgent extends AIChatAgent {
   async generateResponse(prompt: string) {
     // AI SDK tools automatically work
     const response = await generateText({
-      model: openai('gpt-4'),
+      model: openai("gpt-4"),
       prompt,
       tools: {
         // Tools that use getCurrentAgent() work perfectly
-      }
+      },
     });
-    
+
     return response.text;
   }
 }
@@ -113,7 +114,6 @@ export class MyAgent extends AIChatAgent {
   }
 }
 ```
-
 
 ## Troubleshooting
 
