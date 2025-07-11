@@ -871,15 +871,10 @@ export class Agent<Env, State = unknown> extends Server<Env> {
             process?.env?.NODE_ENV === "test"));
 
       if (!isTestEnv) {
-        // Use a try-catch to avoid queueMicrotask issues
-        try {
-          console.warn(
-            "Auto-wrapping custom methods failed:",
-            error instanceof Error ? error.message : String(error)
-          );
-        } catch (logError) {
-          // Ignore logging errors in environments where console.warn might fail
-        }
+        console.warn(
+          "Auto-wrapping custom methods failed:",
+          error instanceof Error ? error.message : String(error)
+        );
       }
     }
   }
