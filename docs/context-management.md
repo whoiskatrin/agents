@@ -115,6 +115,49 @@ export class MyAgent extends AIChatAgent {
 }
 ```
 
+## API Reference
+
+The agents package exports one main function for context management:
+
+### `getCurrentAgent<T>()`
+
+Gets the current agent from any context where it's available.
+
+**Returns:**
+```typescript
+{
+  agent: T | undefined,
+  connection: Connection | undefined, 
+  request: Request | undefined
+}
+```
+
+**Usage:**
+```typescript
+import { getCurrentAgent } from "agents";
+
+export class MyAgent extends AIChatAgent {
+  async customMethod() {
+    const { agent, connection, request } = getCurrentAgent<MyAgent>();
+    // agent is properly typed as MyAgent
+    // connection and request available if called from a request handler
+  }
+}
+```
+
+**That's it!** No decorators, no manual wrapping needed - everything else is automatic.
+
+### How It Works Under the Hood
+
+When you extend `AIChatAgent` or `Agent`, the framework automatically:
+
+1. **Identifies your custom methods** during initialization
+2. **Wraps them with context** so `getCurrentAgent()` works
+3. **Skips built-in framework methods** that already have context
+4. **Ignores private methods** (starting with `_`) by design
+
+This happens once at startup with minimal performance impact.
+
 ## Troubleshooting
 
 ### If getCurrentAgent() Still Returns Undefined
