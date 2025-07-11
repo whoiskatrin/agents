@@ -257,7 +257,7 @@ export function getCurrentAgent<
  * @param request Optional request context
  * @returns A wrapped method that runs within the agent context
  */
-export function withAgentContext<
+function withAgentContext<
   T extends Agent<unknown, unknown>,
   Args extends any[],
   Return
@@ -271,34 +271,6 @@ export function withAgentContext<
     return agentContext.run({ agent, connection, request }, async () => {
       return await method.apply(agent, args);
     });
-  };
-}
-
-/**
- * Decorator to automatically wrap methods with agent context
- * Ensures getCurrentAgent() works properly within the decorated method
- * @param connection Optional connection context
- * @param request Optional request context
- * @returns Method decorator
- */
-export function withContext(connection?: Connection, request?: Request) {
-  return (
-    target: any,
-    propertyKey: string | symbol,
-    descriptor: PropertyDescriptor
-  ) => {
-    const originalMethod = descriptor.value;
-
-    descriptor.value = async function (...args: any[]) {
-      return agentContext.run(
-        { agent: this as Agent<unknown, unknown>, connection, request },
-        async () => {
-          return await originalMethod.apply(this, args);
-        }
-      );
-    };
-
-    return descriptor;
   };
 }
 
