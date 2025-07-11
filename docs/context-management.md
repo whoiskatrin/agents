@@ -124,15 +124,17 @@ The agents package exports one main function for context management:
 Gets the current agent from any context where it's available.
 
 **Returns:**
+
 ```typescript
 {
   agent: T | undefined,
-  connection: Connection | undefined, 
+  connection: Connection | undefined,
   request: Request | undefined
 }
 ```
 
 **Usage:**
+
 ```typescript
 import { getCurrentAgent } from "agents";
 
