@@ -219,7 +219,7 @@ const STATE_WAS_CHANGED = "cf_state_was_changed";
 const DEFAULT_STATE = {} as unknown;
 
 const agentContext = new AsyncLocalStorage<{
-  agent: Agent<unknown>;
+  agent: Agent<unknown, unknown>;
   connection: Connection | undefined;
   request: Request | undefined;
   email: AgentEmail | undefined;
@@ -230,23 +230,45 @@ export function getCurrentAgent<
 >(): {
   agent: T | undefined;
   connection: Connection | undefined;
-  request: Request<unknown, CfProperties<unknown>> | undefined;
+  request: Request | undefined;
+  email: AgentEmail | undefined;
 } {
   const store = agentContext.getStore() as
     | {
         agent: T;
         connection: Connection | undefined;
-        request: Request<unknown, CfProperties<unknown>> | undefined;
+        request: Request | undefined;
+        email: AgentEmail | undefined;
       }
     | undefined;
   if (!store) {
     return {
       agent: undefined,
       connection: undefined,
-      request: undefined
+      request: undefined,
+      email: undefined
     };
   }
   return store;
+}
+
+/**
+ * Wraps a method to run within the agent context, ensuring getCurrentAgent() works properly
+ * @param agent The agent instance
+ * @param method The method to wrap
+ * @returns A wrapped method that runs within the agent context
+ */
+
+// biome-ignore lint/suspicious/noExplicitAny: I can't typescript
+function withAgentContext<T extends (...args: any[]) => any>(
+  method: T
+): (this: Agent<unknown, unknown>, ...args: Parameters<T>) => ReturnType<T> {
+  return function (...args: Parameters<T>): ReturnType<T> {
+    const { connection, request, email } = getCurrentAgent();
+    return agentContext.run({ agent: this, connection, request, email }, () => {
+      return method.apply(this, args);
+    });
+  };
 }
 
 /**
@@ -359,6 +381,9 @@ export class Agent<Env, State = unknown> extends Server<Env> {
         state TEXT
       )
     `;
+
+    // Auto-wrap custom methods with agent context
+    this._autoWrapCustomMethods();
 
     void this.ctx.blockConcurrencyWhile(async () => {
       return this._tryCatch(async () => {
@@ -570,29 +595,31 @@ export class Agent<Env, State = unknown> extends Server<Env> {
           `;
 
           // from DO storage, reconnect to all servers not currently in the oauth flow using our saved auth information
-          Promise.allSettled(
-            servers.map((server) => {
-              return this._connectToMcpServerInternal(
-                server.name,
-                server.server_url,
-                server.callback_url,
-                server.server_options
-                  ? JSON.parse(server.server_options)
-                  : undefined,
-                {
-                  id: server.id,
-                  oauthClientId: server.client_id ?? undefined
-                }
-              );
-            })
-          ).then((_results) => {
-            this.broadcast(
-              JSON.stringify({
-                mcp: this.getMcpServers(),
-                type: "cf_agent_mcp_servers"
+          if (servers && Array.isArray(servers) && servers.length > 0) {
+            Promise.allSettled(
+              servers.map((server) => {
+                return this._connectToMcpServerInternal(
+                  server.name,
+                  server.server_url,
+                  server.callback_url,
+                  server.server_options
+                    ? JSON.parse(server.server_options)
+                    : undefined,
+                  {
+                    id: server.id,
+                    oauthClientId: server.client_id ?? undefined
+                  }
+                );
               })
-            );
-          });
+            ).then((_results) => {
+              this.broadcast(
+                JSON.stringify({
+                  mcp: this.getMcpServers(),
+                  type: "cf_agent_mcp_servers"
+                })
+              );
+            });
+          }
           await this._tryCatch(() => _onStart());
         }
       );
@@ -745,6 +772,72 @@ export class Agent<Env, State = unknown> extends Server<Env> {
       return await fn();
     } catch (e) {
       throw this.onError(e);
+    }
+  }
+
+  /**
+   * Automatically wrap custom methods with agent context
+   * This ensures getCurrentAgent() works in all custom methods without decorators
+   */
+  private _autoWrapCustomMethods() {
+    // Collect all methods from base prototypes (Agent and Server)
+    const basePrototypes = [Agent.prototype, Server.prototype];
+    const baseMethods = new Set<string>();
+    for (const baseProto of basePrototypes) {
+      let proto = baseProto;
+      while (proto && proto !== Object.prototype) {
+        const methodNames = Object.getOwnPropertyNames(proto);
+        for (const methodName of methodNames) {
+          baseMethods.add(methodName);
+        }
+        proto = Object.getPrototypeOf(proto);
+      }
+    }
+    // Get all methods from the current instance's prototype chain
+    let proto = Object.getPrototypeOf(this);
+    let depth = 0;
+    while (proto && proto !== Object.prototype && depth < 10) {
+      const methodNames = Object.getOwnPropertyNames(proto);
+      for (const methodName of methodNames) {
+        // Skip if it's a private method or not a function
+        if (
+          baseMethods.has(methodName) ||
+          methodName.startsWith("_") ||
+          typeof this[methodName as keyof this] !== "function"
+        ) {
+          continue;
+        }
+        // If the method doesn't exist in base prototypes, it's a custom method
+        if (!baseMethods.has(methodName)) {
+          const descriptor = Object.getOwnPropertyDescriptor(proto, methodName);
+          if (descriptor && typeof descriptor.value === "function") {
+            // Wrap the custom method with context
+
+            const wrappedFunction = withAgentContext(
+              // biome-ignore lint/suspicious/noExplicitAny: I can't typescript
+              this[methodName as keyof this] as (...args: any[]) => any
+              // biome-ignore lint/suspicious/noExplicitAny: I can't typescript
+            ) as any;
+
+            // if the method is callable, copy the metadata from the original method
+            if (this._isCallable(methodName)) {
+              callableMetadata.set(
+                wrappedFunction,
+                callableMetadata.get(
+                  this[methodName as keyof this] as Function
+                )!
+              );
+            }
+
+            // set the wrapped function on the prototype
+            this.constructor.prototype[methodName as keyof this] =
+              wrappedFunction;
+          }
+        }
+      }
+
+      proto = Object.getPrototypeOf(proto);
+      depth++;
     }
   }
 
@@ -1017,56 +1110,58 @@ export class Agent<Env, State = unknown> extends Server<Env> {
       SELECT * FROM cf_agents_schedules WHERE time <= ${now}
     `;
 
-    for (const row of result || []) {
-      const callback = this[row.callback as keyof Agent<Env>];
-      if (!callback) {
-        console.error(`callback ${row.callback} not found`);
-        continue;
-      }
-      await agentContext.run(
-        {
-          agent: this,
-          connection: undefined,
-          request: undefined,
-          email: undefined
-        },
-        async () => {
-          try {
-            this.observability?.emit(
-              {
-                displayMessage: `Schedule ${row.id} executed`,
-                id: nanoid(),
-                payload: row,
-                timestamp: Date.now(),
-                type: "schedule:execute"
-              },
-              this.ctx
-            );
-
-            await (
-              callback as (
-                payload: unknown,
-                schedule: Schedule<unknown>
-              ) => Promise<void>
-            ).bind(this)(JSON.parse(row.payload as string), row);
-          } catch (e) {
-            console.error(`error executing callback "${row.callback}"`, e);
-          }
+    if (result && Array.isArray(result)) {
+      for (const row of result) {
+        const callback = this[row.callback as keyof Agent<Env>];
+        if (!callback) {
+          console.error(`callback ${row.callback} not found`);
+          continue;
         }
-      );
-      if (row.type === "cron") {
-        // Update next execution time for cron schedules
-        const nextExecutionTime = getNextCronTime(row.cron);
-        const nextTimestamp = Math.floor(nextExecutionTime.getTime() / 1000);
+        await agentContext.run(
+          {
+            agent: this,
+            connection: undefined,
+            request: undefined,
+            email: undefined
+          },
+          async () => {
+            try {
+              this.observability?.emit(
+                {
+                  displayMessage: `Schedule ${row.id} executed`,
+                  id: nanoid(),
+                  payload: row,
+                  timestamp: Date.now(),
+                  type: "schedule:execute"
+                },
+                this.ctx
+              );
 
-        this.sql`
+              await (
+                callback as (
+                  payload: unknown,
+                  schedule: Schedule<unknown>
+                ) => Promise<void>
+              ).bind(this)(JSON.parse(row.payload as string), row);
+            } catch (e) {
+              console.error(`error executing callback "${row.callback}"`, e);
+            }
+          }
+        );
+        if (row.type === "cron") {
+          // Update next execution time for cron schedules
+          const nextExecutionTime = getNextCronTime(row.cron);
+          const nextTimestamp = Math.floor(nextExecutionTime.getTime() / 1000);
+
+          this.sql`
           UPDATE cf_agents_schedules SET time = ${nextTimestamp} WHERE id = ${row.id}
         `;
-      } else {
-        // Delete one-time schedules after execution
-        this.sql`
+        } else {
+          // Delete one-time schedules after execution
+          this.sql`
           DELETE FROM cf_agents_schedules WHERE id = ${row.id}
         `;
+        }
       }
     }
 
@@ -1260,17 +1355,19 @@ export class Agent<Env, State = unknown> extends Server<Env> {
       SELECT id, name, server_url, client_id, auth_url, callback_url, server_options FROM cf_agents_mcp_servers;
     `;
 
-    for (const server of servers) {
-      const serverConn = this.mcp.mcpConnections[server.id];
-      mcpState.servers[server.id] = {
-        auth_url: server.auth_url,
-        capabilities: serverConn?.serverCapabilities ?? null,
-        instructions: serverConn?.instructions ?? null,
-        name: server.name,
-        server_url: server.server_url,
-        // mark as "authenticating" because the server isn't automatically connected, so it's pending authenticating
-        state: serverConn?.connectionState ?? "authenticating"
-      };
+    if (servers && Array.isArray(servers) && servers.length > 0) {
+      for (const server of servers) {
+        const serverConn = this.mcp.mcpConnections[server.id];
+        mcpState.servers[server.id] = {
+          auth_url: server.auth_url,
+          capabilities: serverConn?.serverCapabilities ?? null,
+          instructions: serverConn?.instructions ?? null,
+          name: server.name,
+          server_url: server.server_url,
+          // mark as "authenticating" because the server isn't automatically connected, so it's pending authenticating
+          state: serverConn?.connectionState ?? "authenticating"
+        };
+      }
     }
 
     return mcpState;
