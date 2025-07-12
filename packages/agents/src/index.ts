@@ -130,6 +130,13 @@ export function unstable_callable(metadata: CallableMetadata = {}) {
   };
 }
 
+export type QueueItem<T = string> = {
+  id: string;
+  payload: T;
+  callback: keyof Agent<unknown>;
+  created_at: number;
+};
+
 /**
  * Represents a scheduled task within an Agent
  * @template T Type of the payload data
@@ -375,6 +382,9 @@ export class Agent<Env, State = unknown> extends Server<Env> {
   constructor(ctx: AgentContext, env: Env) {
     super(ctx, env);
 
+    // Auto-wrap custom methods with agent context
+    this._autoWrapCustomMethods();
+
     this.sql`
       CREATE TABLE IF NOT EXISTS cf_agents_state (
         id TEXT PRIMARY KEY NOT NULL,
@@ -382,8 +392,14 @@ export class Agent<Env, State = unknown> extends Server<Env> {
       )
     `;
 
-    // Auto-wrap custom methods with agent context
-    this._autoWrapCustomMethods();
+    this.sql`
+      CREATE TABLE IF NOT EXISTS cf_agents_queues (
+        id TEXT PRIMARY KEY NOT NULL,
+        payload TEXT,
+        callback TEXT,
+        created_at INTEGER DEFAULT (unixepoch())
+      )
+    `;
 
     void this.ctx.blockConcurrencyWhile(async () => {
       return this._tryCatch(async () => {
@@ -876,6 +892,135 @@ export class Agent<Env, State = unknown> extends Server<Env> {
   }
 
   /**
+   * Queue a task to be executed in the future
+   * @param payload Payload to pass to the callback
+   * @param callback Name of the method to call
+   * @returns The ID of the queued task
+   */
+  async queue<T = unknown>(callback: keyof this, payload: T): Promise<string> {
+    const id = nanoid(9);
+    if (typeof callback !== "string") {
+      throw new Error("Callback must be a string");
+    }
+
+    if (typeof this[callback] !== "function") {
+      throw new Error(`this.${callback} is not a function`);
+    }
+
+    this.sql`
+      INSERT OR REPLACE INTO cf_agents_queues (id, payload, callback)
+      VALUES (${id}, ${JSON.stringify(payload)}, ${callback})
+    `;
+
+    void this._flushQueue().catch((e) => {
+      console.error("Error flushing queue:", e);
+    });
+
+    return id;
+  }
+
+  private _flushingQueue = false;
+
+  private async _flushQueue() {
+    if (this._flushingQueue) {
+      return;
+    }
+    this._flushingQueue = true;
+    while (true) {
+      const executed: string[] = [];
+      const result = this.sql<QueueItem<string>>`
+      SELECT * FROM cf_agents_queues
+      ORDER BY created_at ASC
+    `;
+
+      if (!result || result.length === 0) {
+        break;
+      }
+
+      for (const row of result || []) {
+        const callback = this[row.callback as keyof Agent<Env>];
+        if (!callback) {
+          console.error(`callback ${row.callback} not found`);
+          continue;
+        }
+        const { connection, request, email } = agentContext.getStore() || {};
+        await agentContext.run(
+          {
+            agent: this,
+            connection,
+            request,
+            email
+          },
+          async () => {
+            // TODO: add retries and backoff
+            await (
+              callback as (
+                payload: unknown,
+                queueItem: QueueItem<string>
+              ) => Promise<void>
+            ).bind(this)(JSON.parse(row.payload as string), row);
+            executed.push(row.id);
+          }
+        );
+      }
+      for (const id of executed) {
+        await this.dequeue(id);
+      }
+    }
+    this._flushingQueue = false;
+  }
+
+  /**
+   * Dequeue a task by ID
+   * @param id ID of the task to dequeue
+   */
+  async dequeue(id: string) {
+    this.sql`DELETE FROM cf_agents_queues WHERE id = ${id}`;
+  }
+
+  /**
+   * Dequeue all tasks
+   */
+  async dequeueAll() {
+    this.sql`DELETE FROM cf_agents_queues`;
+  }
+
+  /**
+   * Dequeue all tasks by callback
+   * @param callback Name of the callback to dequeue
+   */
+  async dequeueAllByCallback(callback: string) {
+    this.sql`DELETE FROM cf_agents_queues WHERE callback = ${callback}`;
+  }
+
+  /**
+   * Get a queued task by ID
+   * @param id ID of the task to get
+   * @returns The task or undefined if not found
+   */
+  async getQueue(id: string): Promise<QueueItem<string> | undefined> {
+    const result = this.sql<QueueItem<string>>`
+      SELECT * FROM cf_agents_queues WHERE id = ${id}
+    `;
+    return result
+      ? { ...result[0], payload: JSON.parse(result[0].payload) }
+      : undefined;
+  }
+
+  /**
+   * Get all queues by key and value
+   * @param key Key to filter by
+   * @param value Value to filter by
+   * @returns Array of matching QueueItem objects
+   */
+  async getQueues(key: string, value: string): Promise<QueueItem<string>[]> {
+    const result = this.sql<QueueItem<string>>`
+      SELECT * FROM cf_agents_queues
+    `;
+    return result.filter((row) => JSON.parse(row.payload)[key] === value);
+  }
+
+  /**
    * Schedule a task to be executed in the future
    * @template T Type of the payload data
    * @param when When to execute the task (Date, seconds delay, or cron expression)
@@ -1177,6 +1322,7 @@ export class Agent<Env, State = unknown> extends Server<Env> {
     this.sql`DROP TABLE IF EXISTS cf_agents_state`;
     this.sql`DROP TABLE IF EXISTS cf_agents_schedules`;
     this.sql`DROP TABLE IF EXISTS cf_agents_mcp_servers`;
+    this.sql`DROP TABLE IF EXISTS cf_agents_queues`;
 
     // delete all alarms
     await this.ctx.storage.deleteAlarm();
