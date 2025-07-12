@@ -23,6 +23,19 @@ export class A2AHonoApp {
    * @returns The Hono app with A2A routes.
    */
   public setupRoutes(app: Hono, baseUrl = ""): Hono {
+    app.get(baseUrl, async (c: Context) => {
+      return c.html(`
+        <html>
+          <body>
+            <h1>A2A Agent</h1>
+            <p>This is an A2A agent.</p>
+            <p>
+              <a href="${baseUrl}/.well-known/agent.json">Agent Card</a>
+            </p>            
+          </body>
+        </html>
+      `);
+    });
     app.get(`${baseUrl}/.well-known/agent.json`, async (c: Context) => {
       try {
         const agentCard = await this.requestHandler.getAgentCard();
