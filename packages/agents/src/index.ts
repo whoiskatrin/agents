@@ -10,14 +10,15 @@ import type {
 } from "@modelcontextprotocol/sdk/types.js";
 import { parseCronExpression } from "cron-schedule";
 import { nanoid } from "nanoid";
+import { EmailMessage } from "cloudflare:email";
 import {
   type Connection,
   type ConnectionContext,
-  getServerByName,
   type PartyServerOptions,
-  routePartykitRequest,
   Server,
-  type WSMessage
+  type WSMessage,
+  getServerByName,
+  routePartykitRequest
 } from "partyserver";
 import { camelCaseToKebabCase } from "./client";
 import { MCPClientManager } from "./mcp/client";
@@ -221,6 +222,7 @@ const agentContext = new AsyncLocalStorage<{
   agent: Agent<unknown>;
   connection: Connection | undefined;
   request: Request | undefined;
+  email: AgentEmail | undefined;
 }>();
 
 export function getCurrentAgent<
@@ -394,7 +396,7 @@ export class Agent<Env, State = unknown> extends Server<Env> {
     const _onRequest = this.onRequest.bind(this);
     this.onRequest = (request: Request) => {
       return agentContext.run(
-        { agent: this, connection: undefined, request },
+        { agent: this, connection: undefined, request, email: undefined },
         async () => {
           if (this.mcp.isCallbackRequest(request)) {
             await this.mcp.handleCallbackRequest(request);
@@ -422,7 +424,7 @@ export class Agent<Env, State = unknown> extends Server<Env> {
     const _onMessage = this.onMessage.bind(this);
     this.onMessage = async (connection: Connection, message: WSMessage) => {
       return agentContext.run(
-        { agent: this, connection, request: undefined },
+        { agent: this, connection, request: undefined, email: undefined },
         async () => {
           if (typeof message !== "string") {
             return this._tryCatch(() => _onMessage(connection, message));
@@ -516,7 +518,7 @@ export class Agent<Env, State = unknown> extends Server<Env> {
       // TODO: This is a hack to ensure the state is sent after the connection is established
       // must fix this
       return agentContext.run(
-        { agent: this, connection, request: ctx.request },
+        { agent: this, connection, request: ctx.request, email: undefined },
         async () => {
           setTimeout(() => {
             if (this.state) {
@@ -556,7 +558,12 @@ export class Agent<Env, State = unknown> extends Server<Env> {
     const _onStart = this.onStart.bind(this);
     this.onStart = async () => {
       return agentContext.run(
-        { agent: this, connection: undefined, request: undefined },
+        {
+          agent: this,
+          connection: undefined,
+          request: undefined,
+          email: undefined
+        },
         async () => {
           const servers = this.sql<MCPServerRow>`
             SELECT id, name, server_url, client_id, auth_url, callback_url, server_options FROM cf_agents_mcp_servers;
@@ -614,9 +621,9 @@ export class Agent<Env, State = unknown> extends Server<Env> {
       source !== "server" ? [source.id] : []
     );
     return this._tryCatch(() => {
-      const { connection, request } = agentContext.getStore() || {};
+      const { connection, request, email } = agentContext.getStore() || {};
       return agentContext.run(
-        { agent: this, connection, request },
+        { agent: this, connection, request, email },
         async () => {
           this.observability?.emit(
             {
@@ -656,17 +663,81 @@ export class Agent<Env, State = unknown> extends Server<Env> {
   }
 
   /**
-   * Called when the Agent receives an email
+   * Called when the Agent receives an email via routeAgentEmail()
+   * Override this method to handle incoming emails
    * @param email Email message to process
    */
-  // biome-ignore lint/correctness/noUnusedFunctionParameters: overridden later
-  onEmail(email: ForwardableEmailMessage) {
+  async _onEmail(email: AgentEmail) {
+    // nb: we use this roundabout way of getting to onEmail
+    // because of https://github.com/cloudflare/workerd/issues/4499
     return agentContext.run(
-      { agent: this, connection: undefined, request: undefined },
+      { agent: this, connection: undefined, request: undefined, email: email },
       async () => {
-        console.error("onEmail not implemented");
+        if ("onEmail" in this && typeof this.onEmail === "function") {
+          return this._tryCatch(() =>
+            (this.onEmail as (email: AgentEmail) => Promise<void>)(email)
+          );
+        } else {
+          console.log("Received email from:", email.from, "to:", email.to);
+          console.log("Subject:", email.headers.get("subject"));
+          console.log(
+            "Implement onEmail(email: AgentEmail): Promise<void> in your agent to process emails"
+          );
+        }
       }
     );
+  }
+
+  /**
+   * Reply to an email
+   * @param email The email to reply to
+   * @param options Options for the reply
+   * @returns void
+   */
+  async replyToEmail(
+    email: AgentEmail,
+    options: {
+      fromName: string;
+      subject?: string | undefined;
+      body: string;
+      contentType?: string;
+      headers?: Record<string, string>;
+    }
+  ): Promise<void> {
+    return this._tryCatch(async () => {
+      const agentName = camelCaseToKebabCase(this._ParentClass.name);
+      const agentId = this.name;
+
+      const { createMimeMessage } = await import("mimetext");
+      const msg = createMimeMessage();
+      msg.setSender({ addr: email.to, name: options.fromName });
+      msg.setRecipient(email.from);
+      msg.setSubject(
+        options.subject || `Re: ${email.headers.get("subject")}` || "No subject"
+      );
+      msg.addMessage({
+        contentType: options.contentType || "text/plain",
+        data: options.body
+      });
+
+      const domain = email.from.split("@")[1];
+      const messageId = `<${agentId}@${domain}>`;
+      msg.setHeader("In-Reply-To", email.headers.get("Message-ID")!);
+      msg.setHeader("Message-ID", messageId);
+      msg.setHeader("X-Agent-Name", agentName);
+      msg.setHeader("X-Agent-ID", agentId);
+
+      if (options.headers) {
+        for (const [key, value] of Object.entries(options.headers)) {
+          msg.setHeader(key, value);
+        }
+      }
+      await email.reply({
+        from: email.to,
+        raw: msg.asRaw(),
+        to: email.from
+      });
+    });
   }
 
   private async _tryCatch<T>(fn: () => T | Promise<T>) {
@@ -953,7 +1024,12 @@ export class Agent<Env, State = unknown> extends Server<Env> {
         continue;
       }
       await agentContext.run(
-        { agent: this, connection: undefined, request: undefined },
+        {
+          agent: this,
+          connection: undefined,
+          request: undefined,
+          email: undefined
+        },
         async () => {
           try {
             this.observability?.emit(
@@ -1281,17 +1357,211 @@ export async function routeAgentRequest<Env>(
   return response;
 }
 
+export type EmailResolver<Env> = (
+  email: ForwardableEmailMessage,
+  env: Env
+) => Promise<{
+  agentName: string;
+  agentId: string;
+} | null>;
+
+/**
+ * Create a resolver that uses the message-id header to determine the agent to route the email to
+ * @returns A function that resolves the agent to route the email to
+ */
+export function createHeaderBasedEmailResolver<Env>(): EmailResolver<Env> {
+  return async (email: ForwardableEmailMessage, _env: Env) => {
+    const messageId = email.headers.get("message-id");
+    if (messageId) {
+      const messageIdMatch = messageId.match(/<([^@]+)@([^>]+)>/);
+      if (messageIdMatch) {
+        const [, agentId, domain] = messageIdMatch;
+        const agentName = domain.split(".")[0];
+        return { agentName, agentId };
+      }
+    }
+
+    const references = email.headers.get("references");
+    if (references) {
+      const referencesMatch = references.match(
+        /<([A-Za-z0-9+/]{43}=)@([^>]+)>/
+      );
+      if (referencesMatch) {
+        const [, base64Id, domain] = referencesMatch;
+        const agentId = Buffer.from(base64Id, "base64").toString("hex");
+        const agentName = domain.split(".")[0];
+        return { agentName, agentId };
+      }
+    }
+
+    const agentName = email.headers.get("x-agent-name");
+    const agentId = email.headers.get("x-agent-id");
+    if (agentName && agentId) {
+      return { agentName, agentId };
+    }
+
+    return null;
+  };
+}
+
+/**
+ * Create a resolver that uses the email address to determine the agent to route the email to
+ * @param defaultAgentName The default agent name to use if the email address does not contain a sub-address
+ * @returns A function that resolves the agent to route the email to
+ */
+export function createAddressBasedEmailResolver<Env>(
+  defaultAgentName: string
+): EmailResolver<Env> {
+  return async (email: ForwardableEmailMessage, _env: Env) => {
+    const emailMatch = email.to.match(/^([^+@]+)(?:\+([^@]+))?@(.+)$/);
+    if (!emailMatch) {
+      return null;
+    }
+
+    const [, localPart, subAddress] = emailMatch;
+
+    if (subAddress) {
+      return {
+        agentName: localPart,
+        agentId: subAddress
+      };
+    }
+
+    // Option 2: Use defaultAgentName namespace, localPart as agentId
+    // Common for catch-all email routing to a single EmailAgent namespace
+    return {
+      agentName: defaultAgentName,
+      agentId: localPart
+    };
+  };
+}
+
+/**
+ * Create a resolver that uses the agentName and agentId to determine the agent to route the email to
+ * @param agentName The name of the agent to route the email to
+ * @param agentId The id of the agent to route the email to
+ * @returns A function that resolves the agent to route the email to
+ */
+export function createCatchAllEmailResolver<Env>(
+  agentName: string,
+  agentId: string
+): EmailResolver<Env> {
+  return async () => ({ agentName, agentId });
+}
+
+export type EmailRoutingOptions<Env> = AgentOptions<Env> & {
+  resolver: EmailResolver<Env>;
+};
+
 /**
  * Route an email to the appropriate Agent
- * @param email Email message to route
- * @param env Environment containing Agent bindings
- * @param options Routing options
+ * @param email The email to route
+ * @param env The environment containing the Agent bindings
+ * @param options The options for routing the email
+ * @returns A promise that resolves when the email has been routed
  */
 export async function routeAgentEmail<Env>(
-  _email: ForwardableEmailMessage,
-  _env: Env,
-  _options?: AgentOptions<Env>
-): Promise<void> {}
+  email: ForwardableEmailMessage,
+  env: Env,
+  options: EmailRoutingOptions<Env>
+): Promise<void> {
+  const routingInfo = await options.resolver(email, env);
+
+  if (!routingInfo) {
+    console.warn("No routing information found for email, dropping message");
+    return;
+  }
+
+  const namespaceBinding = env[routingInfo.agentName as keyof Env];
+  if (!namespaceBinding) {
+    throw new Error(
+      `Agent namespace '${routingInfo.agentName}' not found in environment`
+    );
+  }
+
+  // Type guard to check if this is actually a DurableObjectNamespace (AgentNamespace)
+  if (
+    typeof namespaceBinding !== "object" ||
+    !("idFromName" in namespaceBinding) ||
+    typeof namespaceBinding.idFromName !== "function"
+  ) {
+    throw new Error(
+      `Environment binding '${routingInfo.agentName}' is not an AgentNamespace (found: ${typeof namespaceBinding})`
+    );
+  }
+
+  // Safe cast after runtime validation
+  const namespace = namespaceBinding as unknown as AgentNamespace<Agent<Env>>;
+
+  const agent = await getAgentByName(namespace, routingInfo.agentId);
+
+  // let's make a serialisable version of the email
+  const serialisableEmail: AgentEmail = {
+    getRaw: async () => {
+      const reader = email.raw.getReader();
+      const chunks: Uint8Array[] = [];
+
+      let done = false;
+      while (!done) {
+        const { value, done: readerDone } = await reader.read();
+        done = readerDone;
+        if (value) {
+          chunks.push(value);
+        }
+      }
+
+      const totalLength = chunks.reduce((sum, chunk) => sum + chunk.length, 0);
+      const combined = new Uint8Array(totalLength);
+      let offset = 0;
+      for (const chunk of chunks) {
+        combined.set(chunk, offset);
+        offset += chunk.length;
+      }
+
+      return combined;
+    },
+    headers: email.headers,
+    rawSize: email.rawSize,
+    setReject: (reason: string) => {
+      email.setReject(reason);
+    },
+    forward: (rcptTo: string, headers?: Headers) => {
+      return email.forward(rcptTo, headers);
+    },
+    reply: (options: { from: string; to: string; raw: string }) => {
+      return email.reply(
+        new EmailMessage(options.from, options.to, options.raw)
+      );
+    },
+    from: email.from,
+    to: email.to
+  };
+
+  await agent._onEmail(serialisableEmail);
+}
+
+export type AgentEmail = {
+  from: string;
+  to: string;
+  getRaw: () => Promise<Uint8Array>;
+  headers: Headers;
+  rawSize: number;
+  setReject: (reason: string) => void;
+  forward: (rcptTo: string, headers?: Headers) => Promise<void>;
+  reply: (options: { from: string; to: string; raw: string }) => Promise<void>;
+};
+
+export type EmailSendOptions = {
+  to: string;
+  subject: string;
+  body: string;
+  contentType?: string;
+  headers?: Record<string, string>;
+  includeRoutingHeaders?: boolean;
+  agentName?: string;
+  agentId?: string;
+  domain?: string;
+};
 
 /**
  * Get or create an Agent by name
