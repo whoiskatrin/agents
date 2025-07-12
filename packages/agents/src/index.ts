@@ -231,19 +231,22 @@ export function getCurrentAgent<
   agent: T | undefined;
   connection: Connection | undefined;
   request: Request | undefined;
+  email: AgentEmail | undefined;
 } {
   const store = agentContext.getStore() as
     | {
         agent: T;
         connection: Connection | undefined;
         request: Request | undefined;
+        email: AgentEmail | undefined;
       }
     | undefined;
   if (!store) {
     return {
       agent: undefined,
       connection: undefined,
-      request: undefined
+      request: undefined,
+      email: undefined
     };
   }
   return store;
@@ -253,23 +256,17 @@ export function getCurrentAgent<
  * Wraps a method to run within the agent context, ensuring getCurrentAgent() works properly
  * @param agent The agent instance
  * @param method The method to wrap
- * @param connection Optional connection context
- * @param request Optional request context
  * @returns A wrapped method that runs within the agent context
  */
-function withAgentContext<
-  T extends Agent<unknown, unknown>,
-  Args extends any[],
-  Return
->(
-  agent: T,
-  method: (...args: Args) => Return | Promise<Return>,
-  connection?: Connection,
-  request?: Request
-): (...args: Args) => Promise<Return> {
-  return async (...args: Args): Promise<Return> => {
-    return agentContext.run({ agent, connection, request }, async () => {
-      return await method.apply(agent, args);
+
+// biome-ignore lint/suspicious/noExplicitAny: I can't typescript
+function withAgentContext<T extends (...args: any[]) => any>(
+  method: T
+): (this: Agent<unknown, unknown>, ...args: Parameters<T>) => ReturnType<T> {
+  return function (...args: Parameters<T>): ReturnType<T> {
+    const { connection, request, email } = getCurrentAgent();
+    return agentContext.run({ agent: this, connection, request, email }, () => {
+      return method.apply(this, args);
     });
   };
 }
@@ -783,104 +780,64 @@ export class Agent<Env, State = unknown> extends Server<Env> {
    * This ensures getCurrentAgent() works in all custom methods without decorators
    */
   private _autoWrapCustomMethods() {
-    try {
-      // Skip auto-wrapping in test environments where agent may not be fully initialized
-      if (
-        (typeof globalThis !== "undefined" && (globalThis as any).__VITEST__) ||
-        process?.env?.NODE_ENV === "test"
-      ) {
-        return;
-      }
-
-      // Built-in methods that already have context
-      const builtInMethods = new Set([
-        "constructor",
-        "onRequest",
-        "onEmail",
-        "onStateUpdate",
-        "onChatMessage",
-        "onError",
-        "render",
-        "schedule",
-        "getSchedule",
-        "getSchedules",
-        "cancelSchedule",
-        "alarm",
-        "destroy",
-        "addMcpServer",
-        "removeMcpServer",
-        "getMcpServers",
-        "connectToMcpServer",
-        "disconnectFromMcpServer",
-        "broadcast",
-        "send",
-        "setState",
-        "getState",
-        "state",
-        "initialState",
-        // Private methods
-        "_tryCatch",
-        "_autoWrapCustomMethods",
-        "_scheduleNextAlarm",
-        "_connectToMcpServerInternal",
-        "_isCallable",
-        "_updateState",
-        "_setState",
-        "_getState"
-      ]);
-
-      // Get all methods from the prototype chain
-      let proto = Object.getPrototypeOf(this);
-      let depth = 0;
-      while (proto && proto !== Object.prototype && depth < 10) {
+    // Collect all methods from base prototypes (Agent and Server)
+    const basePrototypes = [Agent.prototype, Server.prototype];
+    const baseMethods = new Set<string>();
+    for (const baseProto of basePrototypes) {
+      let proto = baseProto;
+      while (proto && proto !== Object.prototype) {
         const methodNames = Object.getOwnPropertyNames(proto);
-
         for (const methodName of methodNames) {
-          // Skip if it's a built-in method, property, or getter/setter
-          if (
-            builtInMethods.has(methodName) ||
-            methodName.startsWith("_") ||
-            typeof this[methodName as keyof this] !== "function"
-          ) {
-            continue;
-          }
-
-          // Check if it's a custom method (not built-in)
+          baseMethods.add(methodName);
+        }
+        proto = Object.getPrototypeOf(proto);
+      }
+    }
+    // Get all methods from the current instance's prototype chain
+    let proto = Object.getPrototypeOf(this);
+    let depth = 0;
+    while (proto && proto !== Object.prototype && depth < 10) {
+      const methodNames = Object.getOwnPropertyNames(proto);
+      for (const methodName of methodNames) {
+        // Skip if it's a private method or not a function
+        if (
+          baseMethods.has(methodName) ||
+          methodName.startsWith("_") ||
+          typeof this[methodName as keyof this] !== "function"
+        ) {
+          continue;
+        }
+        // If the method doesn't exist in base prototypes, it's a custom method
+        if (!baseMethods.has(methodName)) {
           const descriptor = Object.getOwnPropertyDescriptor(proto, methodName);
           if (descriptor && typeof descriptor.value === "function") {
             // Wrap the custom method with context
-            this[methodName as keyof this] = withAgentContext(
-              this,
-              (this[methodName as keyof this] as Function).bind(this)
+
+            const wrappedFunction = withAgentContext(
+              // biome-ignore lint/suspicious/noExplicitAny: I can't typescript
+              this[methodName as keyof this] as (...args: any[]) => any
+              // biome-ignore lint/suspicious/noExplicitAny: I can't typescript
             ) as any;
+
+            // if the method is callable, copy the metadata from the original method
+            if (this._isCallable(methodName)) {
+              callableMetadata.set(
+                wrappedFunction,
+                callableMetadata.get(
+                  this[methodName as keyof this] as Function
+                )!
+              );
+            }
+
+            // set the wrapped function on the prototype
+            this.constructor.prototype[methodName as keyof this] =
+              wrappedFunction;
           }
         }
-
-        proto = Object.getPrototypeOf(proto);
-        depth++;
       }
-    } catch (error) {
-      // Silently fail if agent is not fully initialized yet
-      // This can happen in test environments or during construction
-      // Only log in production environments
-      const isTestEnv =
-        typeof globalThis !== "undefined" &&
-        ((globalThis as any).__VITEST__ ||
-          (globalThis as any).__JEST__ ||
-          (typeof process !== "undefined" &&
-            process?.env?.NODE_ENV === "test"));
 
-      // Only warn in non-test environments to avoid queueMicrotask issues in test console
-      if (!isTestEnv) {
-        try {
-          console.warn(
-            "Auto-wrapping custom methods failed:",
-            error instanceof Error ? error.message : String(error)
-          );
-        } catch {
-          // Ignore console errors in problematic environments
-        }
-      }
+      proto = Object.getPrototypeOf(proto);
+      depth++;
     }
   }
 

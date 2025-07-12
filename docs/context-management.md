@@ -44,7 +44,7 @@ async function processWithAI(prompt: string) {
 
   return await generateText({
     model: openai("gpt-4"),
-    prompt: `Agent ${agent?.name}: ${prompt}`,
+    prompt: `Agent ${agent?.name}: ${prompt}`
   });
 }
 
@@ -90,7 +90,7 @@ export class MyAgent extends AIChatAgent {
       prompt,
       tools: {
         // Tools that use getCurrentAgent() work perfectly
-      },
+      }
     });
 
     return response.text;

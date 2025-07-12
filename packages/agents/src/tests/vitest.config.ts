@@ -1,15 +1,7 @@
 import { defineWorkersConfig } from "@cloudflare/vitest-pool-workers/config";
 
-// Polyfill for queueMicrotask in test environment
-if (typeof globalThis.queueMicrotask === "undefined") {
-  globalThis.queueMicrotask = (callback: Function) => {
-    Promise.resolve().then(() => callback());
-  };
-}
-
 export default defineWorkersConfig({
   test: {
-    setupFiles: ["./test-setup.ts"],
     globals: true,
     deps: {
       optimizer: {
