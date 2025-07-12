@@ -6,7 +6,7 @@ await build({
     "process.env.NODE_ENV": '"production"'
   },
   entryPoints: ["src/server.ts"],
-  external: ["express", "cloudflare:workers"],
+  external: ["express", "cloudflare:workers", "cloudflare:email"],
   format: "esm",
   logLevel: "info",
   mainFields: ["module", "main"],

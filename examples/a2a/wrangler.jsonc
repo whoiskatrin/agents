@@ -1,5 +1,7 @@
 {
   "$schema": "../../node_modules/wrangler/config-schema.json",
+  "name": "a2a-agent-demo",
+  "main": "dist/server.js",
   "compatibility_date": "2025-03-14",
   "compatibility_flags": ["nodejs_compat"],
   "build": {
@@ -13,12 +15,10 @@
       }
     ]
   },
-  "main": "dist/server.js",
   "migrations": [
     {
       "new_sqlite_classes": ["MyA2A"],
       "tag": "v1"
     }
-  ],
-  "name": "a2a-agent-demo"
+  ]
 }
